@@ -16,9 +16,16 @@
  #Print these out
 # 	library.dynam("RMark", pkgname)
  cat(paste("This is",package,version,"\nBuilt:",built,"\n"))
- if(Sys.which("mark.exe")=="")
-	 stop("Software mark.exe not found in path. It is available at http://www.cnr.colostate.edu/~gwhite/mark/mark.htm")
- }
+ if(R.Version()$os=="mingw32")
+ {
+	if(Sys.which("mark.exe")=="" & !file.exists("c:/Program Files/Mark/mark.exe"))
+ 	   stop("Software mark.exe not found in path or in c:/Program Files/mark. It is available at http://www.cnr.colostate.edu/~gwhite/mark/mark.htm")
+ }else
+ {
+   if(Sys.which("mark")=="")
+	   stop("Software mark not found in path.")
+ }  
+}
 
 
 

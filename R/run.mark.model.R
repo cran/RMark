@@ -87,16 +87,11 @@ delete=FALSE,external=FALSE)
 		else
 			MarkPath=paste(MarkPath,"mark.exe",sep="/")
 	}		
-#    def.options=options()
-#    options(useFancyQuotes=FALSE)
     if(RunMark)
 		system(paste(MarkPath, " BATCH i=",inputfile," o=", outfile,
 						" v=markxxx.vcv r=",resfile,sep = ""), invisible = invisible)
-# 	system(paste(dQuote(MarkPath), "Mark.exe BATCH i=",inputfile," o=", outfile,
-#            " v=markxxx.vcv r=",resfile,sep = ""), invisible = invisible,intern=TRUE)
-    else
+	else
       file.rename(vcvfile,"markxxx.vcv")
-#    options(def.options)
   } else
   {
     if(!exists("MarkPath"))MarkPath=""
