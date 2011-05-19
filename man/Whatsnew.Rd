@@ -4,6 +4,12 @@
 \description{A good place to look for new changes.  Often I'll add changes here but don't always get to it in the documentation 
 for awhile.  They are ordered from newest to oldest.}
 \details{
+Version 2.0.3 (17 May 2011)
+\itemize{
+\item Now requires R 2.13 to use path.package function
+\item Change made to .First.lib to check for availability of mark software that
+depends on operating system.
+}
 Version 2.0.2 (16 May 2011)
 \itemize{
 \item MarkPath no longer needs to be set if mark.exe is no longer in the default location (c:/Program Files/mark) but is specified in the path. The code now uses the R function Sys.which to find the correct location for mark.exe, if it

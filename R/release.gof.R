@@ -61,8 +61,6 @@
 		  else
 			  MarkPath=paste(MarkPath,"rel_32.exe",sep="/")
 	  }		
-#	 def.options=options()
-#    options(useFancyQuotes=FALSE)
     basefile = "release001"
     i = 1
     while (file.exists(paste(basefile, ".out", sep = ""))) {
