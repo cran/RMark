@@ -27,8 +27,8 @@
 #  call notepad to view it; any program could be used in its place. The temp file is immediately deleted
 #  9 Jan 06; changed such that model$output is just the baseline value of the filename
 #
-  def.options=options()
-  options(useFancyQuotes=FALSE)
+#  def.options=options()
+#  options(useFancyQuotes=FALSE)
   model=load.model(x)
   if(!input)
   {
@@ -37,7 +37,7 @@
          if(file.exists(paste(model$output,".out",sep="")))
          {
             if(os=="mingw32")
-               system(paste(dQuote(MarkViewer),paste(model$output,".out",sep="")),invisible=FALSE,wait=FALSE)
+               system(paste(shQuote(MarkViewer),paste(model$output,".out",sep="")),invisible=FALSE,wait=FALSE)
             else
                system(paste(MarkViewer,paste(model$output,".out",sep="")),wait=FALSE)
          }
@@ -53,7 +53,7 @@
          if(file.exists(paste(model$output,".inp",sep="")))
          {
             if(os=="mingw32")
-               system(paste(dQuote(MarkViewer),paste(model$output,".inp",sep="")),invisible=FALSE,wait=FALSE)
+               system(paste(shQuote(MarkViewer),paste(model$output,".inp",sep="")),invisible=FALSE,wait=FALSE)
             else
                system(paste(MarkViewer,paste(model$output,".inp",sep="")),wait=FALSE)
          }
@@ -63,7 +63,7 @@
         print.default(model)
   }
 
-   options(def.options)
+#   options(def.options)
    invisible()
 }
 "print.marklist"<-function(x,...)

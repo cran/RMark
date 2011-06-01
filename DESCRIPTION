@@ -1,6 +1,6 @@
 Package: RMark
-Version: 2.0.3
-Date: 2011-05-18
+Version: 2.0.4
+Date: 2011-06-01
 Title: R Code for MARK Analysis
 Author: Jeff Laake <jeff.laake@noaa.gov>
 Description: This package provides an interface to the software package
@@ -13,6 +13,6 @@ Depends: R (>= 2.13.0), msm, nlme, plotrix
 LazyLoad: yes
 License: GPL (>= 2)
 Maintainer: Jeff Laake <Jeff.Laake@noaa.gov>
-Packaged: 2011-05-19 15:28:29 UTC; hornik
+Packaged: 2011-06-01 18:23:35 UTC; Jeff Laake
 Repository: CRAN
-Date/Publication: 2011-05-19 15:29:44
+Date/Publication: 2011-06-02 05:33:51
