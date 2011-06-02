@@ -4,6 +4,16 @@
 \description{A good place to look for new changes.  Often I'll add changes here but don't always get to it in the documentation 
 for awhile.  They are ordered from newest to oldest.}
 \details{
+Version 2.0.4 (1 June 2011)
+\itemize{
+\item Change made to .First.lib to check for availability of mark software that
+depends on operating system. It now provides a warning rather than stopping
+package attachment.  This allows the user to set MarkPath to some location
+outside of default location Program Files or Program Files (x86) without 
+changing path which requires administrator privilege on Windows.
+\item Change made to \code{\link{run.mark.model}} to use shQuote because link to mark.exe
+was not working in some cases. 
+}
 Version 2.0.3 (17 May 2011)
 \itemize{
 \item Now requires R 2.13 to use path.package function

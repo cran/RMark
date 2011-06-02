@@ -77,15 +77,15 @@ delete=FALSE,external=FALSE)
 		MarkPath=Sys.which("mark.exe")
 	    if(MarkPath=="")
 			if(file.exists("c:/Program Files/Mark/mark.exe"))
-			  MarkPath="c:/Program Files/Mark/mark.exe"
+			  MarkPath=shQuote("c:/Program Files/Mark/mark.exe")
             else
 			  stop("mark.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Program Files (x86)/Mark'")
     }else
 	{
 		if(substr(MarkPath,nchar(MarkPath),nchar(MarkPath))%in%c("\\","/"))
-			MarkPath=paste(MarkPath,"mark.exe",sep="")
+			MarkPath=shQuote(paste(MarkPath,"mark.exe",sep=""))
 		else
-			MarkPath=paste(MarkPath,"mark.exe",sep="/")
+			MarkPath=shQuote(paste(MarkPath,"mark.exe",sep="/"))
 	}		
     if(RunMark)
 		system(paste(MarkPath, " BATCH i=",inputfile," o=", outfile,

@@ -19,12 +19,16 @@
  if(R.Version()$os=="mingw32")
  {
 	if(Sys.which("mark.exe")=="" & !file.exists("c:/Program Files/Mark/mark.exe"))
- 	   stop("Software mark.exe not found in path or in c:/Program Files/mark. It is available at http://www.cnr.colostate.edu/~gwhite/mark/mark.htm")
+	{
+ 	   cat("Warning: Software mark.exe not found in path or in c:/Program Files/mark. It is available at http://www.cnr.colostate.edu/~gwhite/mark/mark.htm\n")
+	   cat('         If you have mark.exe, you will need to set MarkPath object to its location (e.g. MarkPath="C:/Users/Jeff Laake/Desktop"')
  }else
- {
    if(Sys.which("mark")=="")
-	   stop("Software mark not found in path.")
- }  
+   {
+	   cat("Warning: Software mark not found in path.")
+	   cat('         If you have mark.exe, you will need to set MarkPath object to its location (e.g. MarkPath="C:/Users/Jeff Laake/Desktop"')
+   }  
+ }
 }
 
 
