@@ -65,6 +65,9 @@ function(model,parameters=list(),nocc=NULL,check=FALSE,number.of.groups=1)
    if(model=="Jolly") par.list=c("Phi","p","Lambda","N")
    if(model=="ORDMS") par.list=c("S","Psi","pent","Phi","p")
    if(model=="CRDMS") par.list=c("S","Psi","p","c","N")
+   if(model=="LogitNormalMR") par.list=c("p","sigma","N")   
+   if(model=="PoissonMR") par.list=c("alpha","sigma","U","Phi","GammaDoublePrime","GammaPrime")
+   if(model=="IELogitNormalMR") par.list=c("p","sigma","Nbar","alpha","Nstar")   
 #
 #  If this is just a parameter check, return par.list
 #
@@ -942,6 +945,131 @@ function(model,parameters=list(),nocc=NULL,check=FALSE,number.of.groups=1)
 			  if(is.null(parameters$N$formula))parameters$N$formula=~session
 		  }
 		  
-	  } 
+	  }else
+	  if(model=="PoissonMR")
+	  {
+		  parameters$alpha$begin=0
+		  parameters$alpha$num=0
+		  parameters$alpha$type="Square"
+		  if(is.null(parameters$alpha$default))parameters$alpha$default=0
+		  if(is.null(parameters$alpha$pim.type))parameters$alpha$pim.type="all"
+		  if(is.null(parameters$alpha$link))parameters$alpha$link="log"
+		  parameters$sigma$begin=0
+		  parameters$sigma$num=0
+		  parameters$sigma$type="Square"
+		  if(is.null(parameters$sigma$default))parameters$sigma$default=0
+		  if(is.null(parameters$sigma$pim.type))parameters$sigma$pim.type="all"
+		  if(is.null(parameters$sigma$link))parameters$sigma$link="log"
+		  parameters$U$begin=0
+		  parameters$U$num=0
+		  parameters$U$type="Square"
+		  if(is.null(parameters$U$default))parameters$U$default=0
+		  if(is.null(parameters$U$pim.type))parameters$U$pim.type="all"
+		  if(is.null(parameters$U$link))parameters$U$link="log"
+		  parameters$Phi$num=-1
+		  parameters$Phi$begin=0
+		  parameters$Phi$type="Triang"
+		  if(is.null(parameters$Phi$default))parameters$Phi$default=1
+		  if(is.null(parameters$Phi$share))parameters$Phi$share=FALSE
+		  if(is.null(parameters$Phi$pim.type))parameters$Phi$pim.type="all"
+		  if(is.null(parameters$Phi$link))parameters$Phi$link="logit"		  
+		  parameters$GammaDoublePrime$num=-1
+		  parameters$GammaDoublePrime$begin=0
+		  parameters$GammaDoublePrime$type="Triang"
+		  if(is.null(parameters$GammaDoublePrime$default))parameters$GammaDoublePrime$default=0
+		  if(is.null(parameters$GammaDoublePrime$share))parameters$GammaDoublePrime$share=FALSE
+		  if(is.null(parameters$GammaDoublePrime$pim.type))parameters$GammaDoublePrime$pim.type="all"
+		  if(is.null(parameters$GammaDoublePrime$link))parameters$GammaDoublePrime$link="logit"
+		  parameters$GammaPrime$num=-2
+		  parameters$GammaPrime$begin=2
+		  parameters$GammaPrime$type="Triang"
+		  if(is.null(parameters$GammaPrime$default))parameters$GammaPrime$default=0
+		  if(is.null(parameters$GammaPrime$pim.type))parameters$GammaPrime$pim.type="all"
+		  if(is.null(parameters$GammaPrime$link))parameters$GammaPrime$link="logit"
+	  }else
+	  if(model=="LogitNormalMR")
+	  {
+		  parameters$p$begin=0
+		  parameters$p$num=0
+		  parameters$p$type="Square"
+		  parameters$p$secondary=TRUE
+		  if(is.null(parameters$p$default))parameters$p$default=0
+		  if(is.null(parameters$p$link))parameters$p$link="logit"
+
+		  parameters$sigma$num=NA
+		  parameters$sigma$type="Square"
+		  parameters$sigma$secondary=TRUE
+		  if(is.null(parameters$sigma$default))parameters$sigma$default=0
+		  if(is.null(parameters$sigma$link))parameters$sigma$link="log"
+		  if(number.of.groups>1)
+			  if(is.null(parameters$sigma$formula))parameters$sigma$formula=~group:session
+			  else
+			  if(is.null(parameters$sigma$formula))parameters$sigma$formula=~session
+
+		  parameters$N$num=NA
+		  parameters$N$secondary=TRUE
+		  parameters$N$type="Square"
+		  if(is.null(parameters$N$link))parameters$N$link="log"
+		  if(number.of.groups>1)
+		  {
+			  if(is.null(parameters$N$formula))
+				  parameters$N$formula=~group:session
+		  }else
+		  {
+			  if(is.null(parameters$N$formula))parameters$N$formula=~session
+		  }
+	  } else
+	  if(model=="IELogitNormalMR")
+	  {
+		  parameters$p$begin=0
+		  parameters$p$num=0
+		  parameters$p$type="Square"
+		  parameters$p$secondary=TRUE
+		  if(is.null(parameters$p$default))parameters$p$default=0
+		  if(is.null(parameters$p$link))parameters$p$link="logit"
+		  
+		  parameters$sigma$num=NA
+		  parameters$sigma$type="Square"
+		  parameters$sigma$secondary=TRUE
+		  if(is.null(parameters$sigma$default))parameters$sigma$default=0
+		  if(is.null(parameters$sigma$link))parameters$sigma$link="log"
+		  if(number.of.groups>1)
+			  if(is.null(parameters$sigma$formula))parameters$sigma$formula=~group:session
+			  else
+			  if(is.null(parameters$sigma$formula))parameters$sigma$formula=~session
+		  
+		  parameters$Nbar$num=NA
+		  parameters$Nbar$secondary=TRUE
+		  parameters$Nbar$type="Square"
+		  if(is.null(parameters$Nbar$link))parameters$Nbar$link="log"
+		  if(number.of.groups>1)
+		  {
+			  if(is.null(parameters$Nbar$formula))
+				  parameters$Nbar$formula=~group:session
+		  }else
+		  {
+			  if(is.null(parameters$Nbar$formula))parameters$Nbar$formula=~session
+		  }
+
+		  parameters$alpha$begin=0
+		  parameters$alpha$num=-1
+		  parameters$alpha$type="Square"
+		  parameters$alpha$secondary=TRUE
+		  if(is.null(parameters$alpha$default))parameters$alpha$default=0
+		  if(is.null(parameters$alpha$link))parameters$alpha$link="identity"
+		  
+		  parameters$Nstar$num=NA
+		  parameters$Nstar$secondary=TRUE
+		  parameters$Nstar$type="Square"
+		  if(is.null(parameters$Nstar$link))parameters$Nstar$link="log"
+		  if(number.of.groups>1)
+		  {
+			  if(is.null(parameters$Nstar$formula))
+				  parameters$Nstar$formula=~group:session
+		  }else
+		  {
+			  if(is.null(parameters$Nstar$formula))parameters$Nstar$formula=~session
+		  }
+	  }
 return(parameters)
 }

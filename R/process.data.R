@@ -1,6 +1,6 @@
 "process.data" <-
 function(data,begin.time=1,model="CJS",mixtures=1,groups=NULL,allgroups=FALSE,age.var=NULL,
-initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL)
+initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL,counts=NULL)
 {
 # -----------------------------------------------------------------------------------------------------------------
 #
@@ -26,6 +26,8 @@ initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL)
 #  nocc                 - number of occasions for Nest type; either nocc or time.intervals
 #                          must be specified
 #  strata.labels        - vector of single character labels for strata in ORDMS or CRDMS
+#  counts               - list of numeric vectors (one group) or matrices (>1 group) 
+#              	           containing counts for mark-resight models	
 #
 #  Value: result (list with the following elements)
 #
@@ -153,11 +155,18 @@ initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL)
          {
             if(any(!ch.values%in%c("0","1",".")))
             {
-               if(model!="Barker" & model!="MSOccupancy")
+               if(model!="Barker" & model!="MSOccupancy" &model!="PoissonMR")
                   stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
                else
-                  if(any(!ch.values%in%c(".","0","1","2")))
-                     stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+				  if(model=="PoissonMR")
+				  {			  
+					  if(any(!ch.values%in%c(".",as.character(0:9),"+","-")))
+						  stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+				  } else
+				  {
+				      if(any(!ch.values%in%c(".","0","1","2")))
+                         stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+			      }
             }
          }
       }
@@ -231,7 +240,7 @@ if(number.of.factors==0)
                    freq=matrix(data$freq,ncol=1,dimnames=list(1:number.of.ch,"group1")),
                    nocc=nocc, nocc.secondary=nocc.secondary,time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=1,initial.ages=initial.ages[1],group.covariates=NULL,nstrata=nstrata,
-                   strata.labels=strata.labels))
+                   strata.labels=strata.labels,counts=counts))
    }
    else
    {
@@ -245,7 +254,7 @@ if(number.of.factors==0)
                    freq=matrix(rep(1,number.of.ch),ncol=1,dimnames=list(1:number.of.ch,"group1")),
                    nocc=nocc,  nocc.secondary=nocc.secondary, time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=1,initial.ages=initial.ages[1],group.covariates=NULL,nstrata=nstrata,
-                   strata.labels=strata.labels))
+                   strata.labels=strata.labels,counts=counts))
    }
 }
 #
@@ -321,17 +330,17 @@ else
   {
      test.freq=freqmat
      test.freq[test.freq!=0]=1
-     counts = apply(test.freq, 2, sum)
+     chcounts = apply(test.freq, 2, sum)
      newgroups=rep(0,number.of.groups)
      index=1
      for (i in 1:number.of.groups)
-        if(counts[i]>0)
+        if(chcounts[i]>0)
         {
            newgroups[i]=index
            index=index+1
         }     
      data$group=as.factor(newgroups[data$group])
-     freqmat=freqmat[,counts>0]
+     freqmat=freqmat[,chcounts>0]
      number.of.groups=index-1
   }
 #
@@ -344,7 +353,7 @@ else
 #  Create group labels
 #  
   labs=expand.grid(faclabs)
-  if(!allgroups)labs=as.matrix(labs[counts>0,])
+  if(!allgroups)labs=as.matrix(labs[chcounts>0,])
 #
 #  If age.var has not been set, initial ages are set to 0
 #
@@ -379,6 +388,6 @@ else
                    nocc=nocc, nocc.secondary=nocc.secondary, time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=age.unit,initial.ages=init.ages,
                    group.covariates=group.covariates,nstrata=nstrata,
-                   strata.labels=strata.labels))
+                   strata.labels=strata.labels,counts=counts))
 }
 }

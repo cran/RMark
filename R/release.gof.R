@@ -24,6 +24,7 @@
 # mxxx.tmp is used as input file for release
   outfile="mxxx.tmp"
   unlink(outfile)
+  outfile=file(outfile,open="wt")
 # create input file for Release
   string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," FPool;")
   write(string,file=outfile)
@@ -48,18 +49,21 @@
   {
 	  if(!exists("MarkPath"))
 	  {
-		  MarkPath=Sys.which("rel_32.exe")
+		  MarkPath=Sys.which("mark.exe")
 		  if(MarkPath=="")
 			  if(file.exists("c:/Program Files/Mark/rel_32.exe"))
-				  MarkPath="c:/Program Files/Mark/rel_32.exe"
+				  MarkPath=shQuote("c:/Program Files/Mark/rel_32.exe")
 			  else
+			  if(file.exists("c:/Program Files (x86)/Mark/rel_32.exe"))
+				  MarkPath=shQuote("c:/Program Files (x86)/Mark/rel_32.exe")
+			  else	
 				  stop("rel_32.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Program Files (x86)/Mark'")
 	  }else
 	  {
 		  if(substr(MarkPath,nchar(MarkPath),nchar(MarkPath))%in%c("\\","/"))
-			  MarkPath=paste(MarkPath,"rel_32.exe",sep="")
+			  MarkPath=shQuote(paste(MarkPath,"rel_32.exe",sep=""))
 		  else
-			  MarkPath=paste(MarkPath,"rel_32.exe",sep="/")
+			  MarkPath=shQuote(paste(MarkPath,"rel_32.exe",sep="/"))
 	  }		
     basefile = "release001"
     i = 1
@@ -69,6 +73,7 @@
                         sep = "")
        }
     release.out=paste(basefile,".out",sep="")
+	close(outfile)
     system(paste(MarkPath," i=mxxx.tmp"," o=",release.out,sep="" ),
             invisible = invisible)
     unlink(outfile)

@@ -40,6 +40,11 @@ function(data,ddl,parameter,type="age",bins=NULL,name=NULL,replace=FALSE,right=T
   parameters=setup.parameters(data$model)
   model.list=setup.model(data$model,data$nocc,data$mixtures)
 #
+#  Assign user defined pim.types
+#
+  for(pname in names(ddl$pimtypes))
+     parameters[[pname]]$pim.type=ddl$pimtypes[[pname]]$pim.type
+#
 #  Compute design data for the parameter
 #
   if(!model.list$robust) parameters[[parameter]]$secondary=FALSE

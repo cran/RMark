@@ -5,15 +5,15 @@
 A generic function to compute model averaged estimates and their 
 standard errors or variance-covariance matrix}
 \usage{
-\method{model.average}{list}(x,...,revised=TRUE)
+\method{model.average}{list}(x,revised=TRUE,...)
 }
 \arguments{
   \item{x}{a list containing the following elements: 1) \code{estimate} - a vector or matrix of estimates, 2)a vector of model 
           selection criterion value named \code{AIC,AICc,QAIC,QAICc} or a \code{weight} variable that sums to 1 across models,
           and 3) a vector or matrix named \code{se} which give the model-specific standard errors for each estimate 
           or a list of matrices named \code{vcv} which give the model-specific variance-covariance matrices.}
-  \item{...}{additional arguments passed to specific functions}
   \item{revised}{if TRUE it uses eq 6.12 from Burnham and Anderson (2002) for model averaged se; otherwise it uses eq 4.9}
+  \item{...}{additional arguments passed to specific functions}
 }
 \details{
 If a single estimate is being model-averaged then \code{estimate} and \code{se} are vectors with an entry for

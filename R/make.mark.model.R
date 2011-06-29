@@ -566,6 +566,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   parameters=setup.parameters(data$model,parameters,nocc,number.of.groups=number.of.groups)
   parameters=parameters[par.list]
   full.ddl=make.design.data(data,parameters=ddl$pimtypes)
+  parameters=parameters[names(parameters)%in%names(full.ddl)]
   for(j in names(parameters))
   {
      parameters[[j]]$pim.type=ddl$pimtypes[[j]]$pim.type
@@ -830,6 +831,24 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   }
   else
      write.table(zz,file=outfile,eol=";\n",sep=" ",col.names=FALSE,row.names=FALSE,quote=FALSE,append=TRUE)
+#
+# Output counts section of Mark-resight models if appropriate
+#
+  if(!is.null(data$counts))
+	  for(i in 1:number.of.groups)
+	  {
+		  for(j in names(data$counts))
+		  {
+			  write("",file=outfile,append=TRUE)
+			  string=paste(j,"Group =", i, ";")
+		      write(string,file=outfile,append=TRUE)
+		      if(number.of.groups==1)
+		          string=paste(paste(data$counts[[j]],collapse=" "),";",sep="")
+		      else
+			      string=paste(paste(data$counts[[j]][i,],collapse=" "),";",sep="")
+ 		      write(string,file=outfile,append=TRUE)
+		  }
+	  }  
 #
 # First create model name using each parameter unless a model name was given as an argument;
 #

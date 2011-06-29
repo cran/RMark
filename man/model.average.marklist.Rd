@@ -8,22 +8,22 @@ optionally compute the var-cov matrix of the averaged parameters and their confi
 intervals by transforming with the link functions, setting normal confidence intervals on
 the transformed values and then back-transforming for the real estimates.}
 \usage{
-\method{model.average}{marklist}(x, ..., parameter=NULL, data=NULL, vcv=FALSE, 
-           drop=TRUE, indices=NULL, revised=TRUE)
+\method{model.average}{marklist}(x, parameter=NULL, data=NULL, vcv=FALSE, 
+           drop=TRUE, indices=NULL, revised=TRUE,...)
 }
 \arguments{
   \item{x}{a list of mark model results and a model.table constructed by \code{\link{collect.models}}}
-  \item{...}{additional arguments passed to specific functions}
   \item{parameter}{name of model parameter (e.g., "Phi" for CJS models); if left NULL all real parameters are averaged}
   \item{data}{dataframe with covariate values that are averaged for estimates}
   \item{vcv}{logical; if TRUE then the var-cov matrix and confidence intervals are computed}
   \item{drop}{if TRUE, models with any non-positive variance for betas are dropped}
-  \item{indices}{a vector of parameter indices from the all-different PIM forumlation
+  \item{indices}{a vector of parameter indices from the all-different PIM formulation
                 of the parameter estimates that should be presented.  This argument only
                 works if the parameter argument = NULL.  The primary purpose of the argument
                 is to trim the list of parameters in computing a vcv matrix of the real
                 parameters which can get too big to be computed with the available memory}
   \item{revised}{if TRUE, uses revised variance formula (eq 6.12 from Burnham and Anderson) for model averaged estimates and eq 6.11 when FALSE}
+  \item{...}{additional arguments passed to specific functions}
 }
 \details{
 If there are any models in the \code{model.list} which do not have any output or results they are
