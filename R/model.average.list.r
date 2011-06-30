@@ -1,4 +1,4 @@
-model.average.list=function(x,...,revised=TRUE)
+model.average.list=function(x,revised=TRUE,...)
 {
 #  A generic function to compute model averaged estimates and their std errors or variance-covariance matrix
 #

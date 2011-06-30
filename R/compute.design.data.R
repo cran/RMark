@@ -137,7 +137,7 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
              if(type=="Triang")
                 times=(begin+i):(data$nocc.secondary[l]+num)
              else
-                times=(begin+1):data$nocc.secondary[l]
+                times=(begin+1):(begin+ncol)
        else
           if(begin==0)
              if(i==num)

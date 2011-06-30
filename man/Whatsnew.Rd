@@ -4,6 +4,27 @@
 \description{A good place to look for new changes.  Often I'll add changes here but don't always get to it in the documentation 
 for awhile.  They are ordered from newest to oldest.}
 \details{
+Version 2.0.5 (29 June 2011)
+\itemize{
+\item Order of arguments for \code{\link{model.average.marklist}} were switched incorrectly such
+that ... was the second argument.  This has been fixed to the original format where
+... is at the end.  This resulted in the value of any arguments other than the
+first to be ignored unless specifically named e.g., \code{parameter="Phi"}. Thanks to Rod Towell for reporting this error.
+\item Additional changes were made to .First.lib to 1) examine any MarkPath setting,
+2) look in C:/program files/mark or c:/program files (x86)/mark, 3) or to search
+the path.  If MARK executable cannot be found in any of those ways then a warning is
+issued that the user needs to set MarkPath to the path specification for the
+location of the MARK executable.  Thanks to Bryan Wright for help with tracking down a bug. 
+\item A bug in \code{\link{add.design.data}} was fixed where the function gave incorrect
+results in pim.type was anything other than "all".  Thanks to Jeff Hostetler for reporting this error.
+\item The mark-resight models PoissonMR, LogitNormalMR, and IELogitNormalMR were added.  This required some changes
+to \code{\link{make.mark.model}},\code{\link{make.design.data}} and \code{\link{compute.design.data}} and the addition of an argument
+\code{counts} to \code{\link{process.data}} to provide mark-resight count data that are not in the capture history
+format. The format for \code{counts} is a named list of vectors (one group) or matrices (each group is a row) where
+the names of the list elements are specific to the model.  Currently there is no checking to make sure
+these are named correctly. Some of these models are very sensitive to starting values; thus the use of 
+initial values in the examples.  Thanks to Brett McClintock for his help incorporating these models.
+}
 Version 2.0.4 (1 June 2011)
 \itemize{
 \item Change made to .First.lib to check for availability of mark software that

@@ -79,7 +79,10 @@ delete=FALSE,external=FALSE)
 			if(file.exists("c:/Program Files/Mark/mark.exe"))
 			  MarkPath=shQuote("c:/Program Files/Mark/mark.exe")
             else
-			  stop("mark.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Program Files (x86)/Mark'")
+			  if(file.exists("c:/Program Files (x86)/Mark/mark.exe"))
+				  MarkPath=shQuote("c:/Program Files (x86)/Mark/mark.exe")
+		      else	
+			      stop("mark.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Program Files (x86)/Mark'")
     }else
 	{
 		if(substr(MarkPath,nchar(MarkPath),nchar(MarkPath))%in%c("\\","/"))

@@ -139,62 +139,68 @@ if(is.null(model.list$stype) | model.list$stype=="mark")
      }
      if(!model.list$robust) parameters[[i]]$secondary=FALSE
 #
-#    Compute design data for this parameter
-#
-     design.data=compute.design.data(data,parameters[[i]]$begin,parameters[[i]]$num,
-                   parameters[[i]]$type,parameters[[i]]$mix,parameters[[i]]$rows,
-                   parameters[[i]]$pim.type,parameters[[i]]$secondary, nstrata,
-                   tostrata,strata.labels,subtract.stratum,common.zero=common.zero)
-     if(!is.null(parameters[[i]]$mix) && parameters[[i]]$mix)design.data$mixture=as.factor(design.data$mixture)
-     if(parameters[[i]]$secondary)design.data$session=as.factor(design.data$session+data$begin.time-1)
-     design.data$group=as.factor(design.data$group)
-     if(!is.null(data$group.covariates))
-        levels(design.data$group)=apply(data$group.covariates,1,paste,collapse="")
-     if(!is.null(design.data$cohort))
-        if(is.null(parameters[[i]]$cohort.bins))
-           design.data$cohort=factor(design.data$cohort,levels=unique(levels(factor(design.data$cohort))))
-        else
-           design.data$cohort=cut(design.data$cohort,parameters[[i]]$cohort.bins,include.lowest=TRUE,right=right)
-     if(!is.null(design.data$age))
-        if(is.null(parameters[[i]]$age.bins))
+#    Compute design data for this parameter if conditions are valid
+#    mod 27 June 2011 -- if data structure (too few occasions) is such that no parameters can be estimated it does not create the design data
+     if(is.na(parameters[[i]]$num)||(parameters[[i]]$num+data$nocc)>0)
+	 {
+         design.data=compute.design.data(data,parameters[[i]]$begin,parameters[[i]]$num,
+                      parameters[[i]]$type,parameters[[i]]$mix,parameters[[i]]$rows,
+                      parameters[[i]]$pim.type,parameters[[i]]$secondary, nstrata,
+                      tostrata,strata.labels,subtract.stratum,common.zero=common.zero)
+         if(!is.null(parameters[[i]]$mix) && parameters[[i]]$mix)design.data$mixture=as.factor(design.data$mixture)
+         if(parameters[[i]]$secondary)design.data$session=as.factor(design.data$session+data$begin.time-1)
+         design.data$group=as.factor(design.data$group)
+         if(!is.null(data$group.covariates))
+            levels(design.data$group)=apply(data$group.covariates,1,paste,collapse="")
+         if(!is.null(design.data$cohort))
+            if(is.null(parameters[[i]]$cohort.bins))
+               design.data$cohort=factor(design.data$cohort,levels=unique(levels(factor(design.data$cohort))))
+            else
+               design.data$cohort=cut(design.data$cohort,parameters[[i]]$cohort.bins,include.lowest=TRUE,right=right)
+         if(!is.null(design.data$age))
+         if(is.null(parameters[[i]]$age.bins))
            design.data$age=factor(design.data$age,levels=unique(levels(factor(design.data$age))))
-        else
+         else
            design.data$age=cut(design.data$age,parameters[[i]]$age.bins,include.lowest=TRUE,right=right)
-     if(!is.null(design.data$time))
+         if(!is.null(design.data$time))
 # mod 30 Sept 09 to remove unused time factor levels
-       if(is.null(parameters[[i]]$time.bins))
-          design.data$time=factor(design.data$time,levels=unique(levels(factor(design.data$time))))
-       else
-          design.data$time=cut(design.data$time,parameters[[i]]$time.bins,include.lowest=TRUE,right=right)
-     if(model.list$closed | model.list$robust )
-     {
-        if(names(parameters)[i]=="p")
-        {
-           design.data$c=0
-           design.data$age=NULL
-           design.data$Age=NULL
-        }
-        if(names(parameters)[i]=="c")
-        {
-           design.data$c=1
-           design.data$age=NULL
-           design.data$Age=NULL
-        }
-        if(names(parameters)[i]=="N" | names(parameters)[i]=="pi")
-        {
-           design.data$age=NULL
-           design.data$Age=NULL
-           design.data$time=NULL
-           design.data$Time=NULL
-        }
-     }
-     full.design.data[[i]]=design.data
-     pimtypes[[i]]=list(pim.type=parameters[[i]]$pim.type)
-	 if(!is.null(subtract.stratum))pimtypes[[i]]$subtract.stratum=subtract.stratum
-     if(parameters[[i]]$type =="Triang"&&parameters[[i]]$pim.type=="all")anyTriang=TRUE
-     if(parameters[[i]]$type =="Square")anySquare=TRUE
+         if(is.null(parameters[[i]]$time.bins))
+            design.data$time=factor(design.data$time,levels=unique(levels(factor(design.data$time))))
+         else
+            design.data$time=cut(design.data$time,parameters[[i]]$time.bins,include.lowest=TRUE,right=right)
+         if(model.list$closed | model.list$robust )
+         {
+            if(names(parameters)[i]=="p")
+            {
+               design.data$c=0
+               design.data$age=NULL
+               design.data$Age=NULL
+            }
+            if(names(parameters)[i]=="c")
+            {
+               design.data$c=1
+               design.data$age=NULL
+               design.data$Age=NULL
+            }
+            if(names(parameters)[i]=="N" | names(parameters)[i]=="pi")
+            {
+               design.data$age=NULL
+               design.data$Age=NULL
+               design.data$time=NULL
+               design.data$Time=NULL
+            }
+         }
+         full.design.data[[i]]=design.data
+         pimtypes[[i]]=list(pim.type=parameters[[i]]$pim.type)
+	     if(!is.null(subtract.stratum))pimtypes[[i]]$subtract.stratum=subtract.stratum
+         if(parameters[[i]]$type =="Triang"&&parameters[[i]]$pim.type=="all")anyTriang=TRUE
+         if(parameters[[i]]$type =="Square")anySquare=TRUE
+	  }
    }
    names(full.design.data)=names(parameters)
+   null.design.data=sapply(full.design.data,is.null)
+   parameters=parameters[!null.design.data]
+   full.design.data=full.design.data[!null.design.data]
 #
 #  Remove unused design data
 #
@@ -263,6 +269,7 @@ if(is.null(model.list$stype) | model.list$stype=="mark")
      }
      
    }
+   pimtypes=pimtypes[!null.design.data]
    names(pimtypes)=names(parameters)
    full.design.data$pimtypes=pimtypes
    return(full.design.data)
