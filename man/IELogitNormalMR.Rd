@@ -28,6 +28,7 @@ mod1=mark(IElogitNor.proc,IElogitNor.ddl,
 							  alpha=list(formula=~-1+session:time),
 							  Nstar=list(formula=~session),
 							  Nbar=list(formula=~session)))
+summary(mod1)
 
 mod2=mark(IElogitNor.proc,IElogitNor.ddl,
 		  model.parameters=list(p=list(formula=~-1+session:time),
@@ -36,6 +37,6 @@ mod2=mark(IElogitNor.proc,IElogitNor.ddl,
 							  Nstar=list(formula=~session),
 							  Nbar=list(formula=~session)),
 							  initial=mod1)
-			  
+summary(mod2)			  
 }
 \keyword{datasets}

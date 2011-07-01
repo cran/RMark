@@ -22,10 +22,11 @@ pois.proc=process.data(Poisson_twoMR,model="PoissonMR",groups="pg",
 				    "Marked Unidentified"=matrix(c(10,5),nrow=2,ncol=1),
 					"Known Marks"=matrix(c(60,0),nrow=2,ncol=1)))
 pois.ddl=make.design.data(pois.proc)
-mark(pois.proc,pois.ddl,
+mod=mark(pois.proc,pois.ddl,
 		model.parameters=list(alpha=list(formula=~1),
 				              U=list(formula=~-1+group),
 				              sigma=list(formula=~1,fixed=0)),
 	 	                      initial=c(0.9741405 ,0.0000000 ,6., 5.))
+summary(mod)	 	                 
 }
 \keyword{datasets}

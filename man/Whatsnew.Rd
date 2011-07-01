@@ -4,6 +4,11 @@
 \description{A good place to look for new changes.  Often I'll add changes here but don't always get to it in the documentation 
 for awhile.  They are ordered from newest to oldest.}
 \details{
+Version 2.0.6 (1 July 2011)
+\itemize{
+\item Change to MR resight examples so the output does not appear in notepad which was causing problem
+with check on CRAN submission
+} 
 Version 2.0.5 (29 June 2011)
 \itemize{
 \item Order of arguments for \code{\link{model.average.marklist}} were switched incorrectly such
