@@ -1,6 +1,6 @@
 Package: RMark
-Version: 2.0.6
-Date: 2011-07-01
+Version: 2.0.7
+Date: 2011-08-25
 Title: R Code for MARK Analysis
 Author: Jeff Laake <jeff.laake@noaa.gov>
 Description: This package provides an interface to the software package
@@ -34,6 +34,6 @@ Collate: 'add.design.data.R' 'adjust.chat.R' 'adjust.parameter.count.R'
         'summary.mark.R' 'TransitionMatrix.R' 'utility.r'
         'valid.parameters.R' 'var.components.R' 'var.components.reml.r'
         'zzz.R'
-Packaged: 2011-07-01 17:03:19 UTC; JLaake
+Packaged: 2011-08-25 18:46:11 UTC; JLaake
 Repository: CRAN
-Date/Publication: 2011-07-02 14:19:13
+Date/Publication: 2011-08-25 20:07:50
