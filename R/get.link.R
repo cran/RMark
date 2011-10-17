@@ -1,4 +1,30 @@
-"get.link" <-
+#' Compute sets of link values for real parameters
+#' 
+#' Computes link values for real parameters for a particular type of parameter
+#' (parameter) and returns in a table (dataframe) format.
+#' 
+#' This function is very similar to \code{\link{get.real}} except that it
+#' provides estimates of link values before they are transformed to real
+#' estimates using the inverse-link.  Also, the value is always a dataframe for
+#' the estimates and design data and optionally a variance-covariance matrix.
+#' See \code{\link{get.real}} for further details about the arguments.
+#' 
+#' @param model MARK model object
+#' @param parameter type of parameter in model (character) (e.g.,"Phi")
+#' @param beta values of beta parameters for computation of link values
+#' @param design a numeric design matrix with any covariate values filled in
+#' with numerical values
+#' @param data covariate data to be averaged for estimates if design=NULL
+#' @param vcv if TRUE computes and returns the v-c matrix of the subset of the
+#' link values
+#' @return estimates: If \code{vcv=TRUE}, a list is returned with elements
+#' \code{vcv.link} and the dataframe \code{estimates}. If \code{vcv=FALSE},
+#' only the estimates dataframe is returned which has the same structure as in
+#' \code{\link{get.real}}.
+#' @author Jeff Laake
+#' @seealso \code{\link{compute.link}},\code{\link{get.real}}
+#' @keywords utility
+get.link <-
 function(model,parameter,beta=NULL,design=NULL,data=NULL,vcv=FALSE)
 {
 # ----------------------------------------------------------------------------------------
@@ -100,7 +126,7 @@ function(model,parameter,beta=NULL,design=NULL,data=NULL,vcv=FALSE)
   parameter.names=names(parameters)
   type=parameters[[match(parameter,parameter.names)]]$type
   ng=length(model$pims[[parameter]])
-  if( type =="Triang" | !is.null(model$mixtures)| !is.null(model$nocc.secondary))
+  if( type %in%c("Triang","STriang") | !is.null(model$mixtures)| !is.null(model$nocc.secondary))
       estimates=list()
   else
       estimates=NULL
@@ -126,13 +152,13 @@ function(model,parameter,beta=NULL,design=NULL,data=NULL,vcv=FALSE)
                     output.labels[j]=paste(output.labels[j]," To:",model$strata.labels[model$pims[[parameter]][[j]]$tostratum],sep="")
               else
                  if(parameter.labels[k]=="session")
-                    output.labels[j]=paste(output.labels[j]," Session:",model$pims[[parameter]][[j]]$session,sep="")
+                    output.labels[j]=paste(output.labels[j]," Session:",model$pims[[parameter]][[j]]$session.label,sep="")
 
        }
     }
     else
         output.labels[j]=""
-    if(type=="Triang" && model$parameters[[parameter]]$pim.type!="all")
+    if(type%in%c("Triang","STriang") && model$parameters[[parameter]]$pim.type!="all")
         if(model$parameters[[parameter]]$pim.type=="time")
            indices=model$pims[[parameter]][[j]]$pim[1,]
         else

@@ -1,23 +1,31 @@
-"release.gof" <-
-  function(data,invisible=TRUE,title="Release gof",view=FALSE)
+#' Runs RELEASE for goodness of fit test
+#' 
+#' Creates input file for RELEASE with the specified data, runs RELEASE and
+#' extracts the summary results for TEST2 and TEST3. Output file is named
+#' Releasennn.tmp where nnn is an increasing numeric value to create a unique
+#' filename.
+#' 
+#' 
+#' @param data processed RMark data
+#' @param invisible if TRUE, RELEASE run window is hidden from view
+#' @param title title for output
+#' @param view if TRUE, shows release output in a viewer window
+#' @return results: a dataframe giving chi-square, degrees of freedom and P
+#' value for TEST2, TEST3 and total of tests
+#' @author Jeff Laake
+#' @export
+#' @keywords utility
+#' @examples
+#' 
+#' data(dipper)
+#' dipper.processed=process.data(dipper,groups=("sex"))
+#' # The following is commented out because it does not run
+#' # under check for some reason; very weird error lurking somewhere
+#' #release.gof(dipper.processed)
+#' 
+release.gof <-
+  function(data,invisible=TRUE,title="Release-gof",view=FALSE)
 {
-# -----------------------------------------------------------------------------------------------------------------------
-#
-#  release.gof        Runs release to get the goodness of fit results
-#
-#  Arguments:
-#
-#  data       - processed RMark data
-#  invisible  - if TRUE, RELEASE run window is hidden from view
-#  title      - title for output
-#  view       - if TRUE, shows release output in a window
-#
-#  Value:
-#
-#   results   - a dataframe giving chi-square, degrees of freedom and P value
-#               for TEST2, TEST3 and total of tests
-#
-# -----------------------------------------------------------------------------------------------------------------------
   if(is.null(data$nocc)) stop("\ndata argument must be a processed data list\n")
   nocc=data$nocc
   number.of.groups=dim(data$freq)[2]

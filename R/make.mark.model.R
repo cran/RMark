@@ -1,12 +1,410 @@
-"make.mark.model" <-
-function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,covariates=NULL,call=NULL,
-            simplify=TRUE,default.fixed=TRUE,options=NULL,profile.int=FALSE,chat=NULL)
+#' Create a MARK model for analysis
+#' 
+#' Creates a MARK model object that contains a MARK input file with PIMS and
+#' design matrix specific to the data and model structure and formulae
+#' specified for the model parameters.
+#' 
+#' This function is called by \code{\link{mark}} to create the model but it can
+#' be called directly to create but not run the model.  All of the arguments
+#' have default values except for the first 2 that specify the processed data
+#' list (\code{data}) and the design data list (\code{ddl}). If only these 2
+#' arguments are specified default models are used for the parameters.  For
+#' example, following with the example from \code{\link{process.data}} and
+#' \code{\link{make.design.data}}, the default model can be created with:
+#' 
+#' \code{mymodel=make.mark.model(proc.example.data,ddl)}
+#' 
+#' The call to \code{make.mark.model} creates a model object but does not do
+#' the analysis.  The function returns a list that includes several fields
+#' including a design matrix and the MARK input file that will be used with
+#' \code{MARK.EXE} to run the analysis from function
+#' \code{\link{run.mark.model}}. The following shows the names of the list
+#' elements in mymodel:
+#' 
+#' \preformatted{ names(mymodel) [1] "data" "model" "title" "model.name"
+#' "links" [6] "mixtures" "call" "parameters" "input" "number.of.groups" [11]
+#' "group.labels" "nocc" "begin.time" "covariates" "fixed" [16] "design.matrix"
+#' "pims" "design.data" "strata.labels" "mlogit.list" [21] "simplify" }
+#' 
+#' The list is defined to be a mark object which is done by assigning a class
+#' vector to the list.  The classes for an R object can be viewed with the
+#' class function as shown below:
+#' 
+#' \preformatted{ class(mymodel) [1] "mark" "CJS" } Each MARK model has 2 class
+#' values.  The first identifies it as a mark object and the second identifies
+#' the type of mark analysis, which is the default "CJS" (recaptures only) in
+#' this case.  The use of the class feature has advantages in using generic
+#' functions and identifying types of objects.  An object of class \code{mark}
+#' is defined in more detail in function \code{\link{mark}}.
+#' 
+#' To fit non-trivial models it is necessary to understand the remaining
+#' calling arguments of \code{make.mark.model} and R formula notation. The
+#' model formulae are specified with the calling argument \code{parameters}.
+#' It uses a similar list structure as the \code{parameters} argument in
+#' \code{\link{make.design.data}}. It expects to get a list with elements named
+#' to match the parameters in the particular analysis (e.g., Phi and p in CJS)
+#' and each list element is a list, so it is a list of lists).  For each
+#' parameter, the possible list elements are \code{formula, link, fixed,
+#' component, component.name, remove.intercept}. In addition, for closed
+#' capture models and robust design model, the element \code{share} is included
+#' in the list for p (capture probabilities) and GammaDoublePrime
+#' (respectively) to indicate whether the model is shared (share=TRUE) or
+#' not-shared (the default) (share=FALSE) with c (recapture probabilities) and
+#' GammaPrime respectively.
+#' 
+#' \code{formula} specifies the model for the parameter using R formula
+#' notation. An R formula is denoted with a \code{~} followed by variables in
+#' an equation format possibly using the \code{+} , \code{*}, and \code{:}
+#' operators.  For example, \code{~sex+age} is an additive model with the main
+#' effects of \code{sex} and \code{age}. Whereas, \code{~sex*age} includes the
+#' main effects and the interaction and it is equivalent to the formula
+#' specified as \code{~sex+age+sex:age} where \code{sex:age} is the interaction
+#' term.  The model \code{~age+sex:age} is slightly different in that the main
+#' effect for \code{sex} is dropped which means that intercept of the
+#' \code{age} effect is common among the sexes but the age pattern could vary
+#' between the sexes.  The model \code{~sex*Age} which is equivalent to
+#' \code{~sex + Age + sex:Age} has only 4 parameters and specifies a linear
+#' trend with age and both the intercept and slope vary by sex.  One additional
+#' operator that can be useful is \code{I()} which allows computation of
+#' variables on the fly.  For example, the addition of the Agesq variable in
+#' the design data (as described above) can be avoided by using the notation
+#' \code{~Age + I(Age^2)} which specifies use of a linear and quadratic effect
+#' for age.  Note that specifying the model \code{~age + I(age^2)} would be
+#' incorrect and would create an error because \code{age} is a factor variable
+#' whereas \code{Age} is not.
+#' 
+#' As an example, consider developing a model in which Phi varies by age and p
+#' follows a linear trend over time. This model could be specified and run as
+#' follows:
+#' 
+#' \preformatted{ p.Time=list(formula=~Time) Phi.age=list(formula=~age)
+#' Model.p.Time.Phi.age=make.mark.model(proc.example.data,ddl,
+#' parameters=list(Phi=Phi.age,p=p.Time))
+#' Model.p.Time.Phi.age=run.mark.model(Model.p.Time.Phi.age) }
+#' 
+#' The first 2 commands define the p and Phi models that are used in the
+#' \code{parameter} list in the call to \code{make.mark.model}. This is a good
+#' approach for defining models because it clearly documents the models, the
+#' definitions can then be used in many calls to \code{make.mark.model} and it
+#' will allow a variety of models to be developed quickly by creating different
+#' combinations of the parameter models.  Using the notation above with the
+#' period separating the parameter name and the description (eg., p.Time) gives
+#' the further advantage that all possible models can be developed quickly with
+#' the functions \code{\link{create.model.list}} and
+#' \code{\link{mark.wrapper}}.
+#' 
+#' Model formula can use any field in the design data and any individual
+#' covariates defined in \code{data}.  The restrictions on individual
+#' covariates that was present in versions before 1.3 have now been removed.
+#' You can now use interactions of individual covariates with all design data
+#' covariates and products of individual covariates.  You can specify
+#' interactions of individual covariates and factor variables in the design
+#' data with the formula notation.  For example, \code{~region*x1} describes a
+#' model in which the slope of \code{x1} varies by \code{region}. Also,
+#' \code{~time*x1} describes a model in which the slope for \code{x1} varied by
+#' time; however, there would be only one value of the covariate per animal so
+#' this is not a time varying covariate model.  Models with time varying
+#' covariates are now more easily described with the improvements in version
+#' 1.3 but there are restrictions on how the time varying individual covariates
+#' are named.  An example would be a trap dependence model in which capture
+#' probability on occasion i+1 depends on whether they were captured on
+#' occasion i.  If there are n occasions in a CJS model, the 0/1 (not
+#' caught/caught) for occasions 1 to n-1 would be n-1 individual covariates to
+#' describe recapture probability for occasions 2 to n. For times 2 to n, a
+#' design data field could be defined such that the variable timex is 1 if
+#' time==x and 0 otherwise.  The time varying covariates must be named with a
+#' time suffix on the base name of the covariate. In this example they would be
+#' named as \code{x2,. . .,xn} and the model could be specified as \code{~time
+#' + x} for time variation and a constant trap effect or as \code{~time +
+#' time:x} for a trap effect that varied by time.  If in the
+#' \code{\link{process.data}} call, the argument \code{begin.time} was set to
+#' the year 1990, then the variables would have to be named x1991,x1992,...
+#' because the first recapture occasion would be 1991.  Note that the times are
+#' different for different parameters.  For example, survival is labeled based
+#' on the beginning of the time interval which would be 1990 so the variables
+#' should be named appropriately for the parameter model in which they will be
+#' used.
+#' 
+#' In previous versions to handle time varying covariates with a constant
+#' effect, it was necessary to use the component feature of the parameter
+#' specification to be able to append one or more arbitrary columns to the
+#' design matrix.  That is no longer required for individual covariates and the
+#' component feature was removed in v2.0.8.
+#' 
+#' There are three other elements of the parameter list that can be useful on
+#' occasion.  The first is \code{link} which specifies the link function for
+#' transforming between the beta and real parameters.  The possible values are
+#' "logit", "log", "identity" and "mlogit(*)" where * is a numeric identifier.
+#' The "sin" link is not allowed because all models are specified using a
+#' design matrix.  The typical default values are assigned to each parameter
+#' (eg "logit" for probabilities, "log" for N, and "mlogit" for pent in POPAN),
+#' so in most cases it will not be necessary to specify a link function.
+#' 
+#' The second is \code{fixed} which allows real parameters to be set at fixed
+#' values.  The values for \code{fixed} can be either a single value or a list
+#' with 5 alternate forms for ease in specifying the fixed parameters.
+#' Specifying \code{fixed=value} will set all parameters of that type to the
+#' specified value.  For example, \code{Phi=list(fixed=1)} will set all Phi to
+#' 1.  This can be useful for situations like specifying F in the
+#' Burnham/Barker models to all have the same value of 1.  Fixed values can
+#' also be specified as a list in which values are specified for certain
+#' indices, times, ages, cohorts, and groups.  The first 3 will be the most
+#' useful.  The first list format is the most general and flexible but it
+#' requires an understanding of the PIM structure and index numbers for the
+#' real parameters.  For example,
+#' 
+#' \code{Phi=list(formula=~time, fixed=list(index=c(1,4,7),value=1))}
+#' 
+#' specifies Phi varying by time, but the real parameters 1,4,7 are set to 1.
+#' The \code{value} field is either a single constant or its length must match
+#' the number of indices.  For example,
+#' 
+#' \code{Phi=list(formula=~time, fixed=list(index=c(1,4,7),value=c(1,0,1)))}
+#' 
+#' sets real parameters 1 and 7 to 1 and real parameter 4 to 0.  Technically,
+#' the index/value format for fixed is not wedded to the parameter type (i.e.,
+#' values for p can be assigned within Phi list), but for the sake of clarity
+#' they should be restricted to fixing real parameters associated with the
+#' particular parameter type.  The \code{time} and \code{age} formats for fixed
+#' will probably be the most useful.  The format fixed=list(time=x, value=y)
+#' will set all real parameters (of that type) for time x to value y.  For
+#' example,
+#' 
+#' \code{p=list(formula=~time,fixed=list(time=1986,value=1))}
+#' 
+#' sets up time varying capture probability but all values of p for 1986 are
+#' set to 1.  This can be quite useful to set all values to 0 in years with no
+#' sampling (e.g., \preformatted{fixed=list(time=c(1982,1984,1986), value=0)}).
+#' The \code{age}, \code{cohort} and \code{group} formats work in a similar
+#' fashion.  It is important to recognize that the value you specify for
+#' \code{time}, \code{age}, \code{cohort} and \code{group} must match the
+#' values in the design data list.  This is another reason to add binned fields
+#' for age, time etc with \code{\link{add.design.data}} after creating the
+#' default design data with \code{\link{make.design.data}}.  Also note that the
+#' values for \code{time} and \code{cohort} are affected by the
+#' \code{begin.time} argument specified in \code{\link{process.data}}.  Had I
+#' not specified \code{begin.time=1980}, to set p in the last occasion (1986),
+#' the specification would be
+#' 
+#' \code{p=list(formula=~time,fixed=list(time=7,value=1))}
+#' 
+#' because begin.time defaults to 1.  The advantage of the time-, age-, and
+#' cohort- formats over the index-format is that it will work regardless of the
+#' group definition which can easily be changed by changing the \code{groups}
+#' argument in \code{\link{process.data}}.  The index-format will be dependent
+#' on the group structure because the indexing of the PIMS will most likely
+#' change with changes in the group structure.
+#' 
+#' Parameters can also be fixed at default values by deleting the specific rows
+#' of the design data. See \code{\link{make.design.data}} and material below.
+#' The default value for fixing parameters for deleted design data can be
+#' changed with the \code{default=value} in the parameter list.
+#' 
+#' The final useful element of the parameter list is the
+#' \code{remove.intercept} argument.  It is set to TRUE to forcefully remove
+#' the intercept.  In R notation this can be done by specifiying the formula
+#' notation ~-1+... but in formula with nested interactions of factor variables
+#' and additive factor variables the -1 notation will not remove the intercept.
+#' It will simply adjust the column definitions but will keep the same number
+#' of columns and the model will be overparameterized.  The problem occurs with
+#' nested factor variables like tostratum within stratum for multistrata
+#' designs (see \code{\link{mstrata}}).  As shown in that example, you can
+#' build a formula -1+stratum:tostratum to have transitions that are
+#' stratum-specific.  If however you also want to add a sex effect and you
+#' specify -1+sex+stratum:tostratum it will add 2 columns for sex labelled M
+#' and F when in fact you only want to add one column because the intercept is
+#' already contained within the stratum:tostratum term.  The argument
+#' remove.intercept will forcefully remove the intercept but it needs to be
+#' able to find a column with all 1's.  For example,
+#' Psi=list(formula=~sex+stratum:tostratum,remove.intercept=TRUE) will work but
+#' Psi=list(formula=~-1+sex+stratum:tostratum,remove.intercept=TRUE) will not
+#' work.  Also, the -1 notation should be used when there is not an added
+#' factor variable because
+#' \preformatted{Psi=list(formula=~stratum:tostratum,remove.intercept=TRUE)}
+#' will not work because while the stratum:tostratum effectively includes an
+#' intercept it is equivalent to using an identity matrix and is not specified
+#' as treatment contrast with one of the columns as all 1's.
+#' 
+#' The argument simplify determines whether the pims are simplified such that
+#' only indices for unique and fixed real parameters are used.  For example,
+#' with an all different PIM structure with CJS with K occasions there are
+#' K*(K-1) real parameters for Phi and p.  However, if you use simplify=TRUE
+#' with the default model of Phi(.)p(.), the pims are re-indexed to be 1 for
+#' all the Phi's and 2 for all the p's because there are only 2 unique real
+#' parameters for that model.  Using simplify can speed analysis markedly and
+#' probably should always be used.  This was left as an argument only to test
+#' that the simplification was working and produced the same likelihood and
+#' real parameter estimates with and without simplification. It only adjust the
+#' rows of the design matrix and not the columns.  There are some restrictions
+#' for simplification.  Real parameters that are given a fixed value are
+#' maintained in the design matrix although it does simplify amongst the fixed
+#' parameters.  For example, if there are 50 real parameters all fixed to a
+#' value of 1 and 30 all fixed to a value of 0, they are reduced to 2 real
+#' parameters fixed to 1 and 0. Also, real parameters such as Psi in
+#' Multistrata and pent in POPAN that use multinomial logits are not simplified
+#' because they must maintain the structure created by the multinomial logit
+#' link.  All other parameters in those models are simplified.  The only
+#' downside of simplification is that the labels for real parameters in the
+#' MARK output are unreliable because there is no longer a single label for the
+#' real parameter because it may represent many different real parameters in
+#' the all-different PIM structure.  This is not a problem with the labels in R
+#' because the real parameter estimates are translated back to the
+#' all-different PIM structure with the proper labels.
+#' 
+#' The argument \code{default.fixed} is related to deletion of design data (see
+#' \code{\link{make.design.data}}).  If design data are deleted and
+#' \code{default.fixed=T} the missing real parameters are fixed at a reasonable
+#' default to represent structural "zeros".  For example, p is set to 0, Phi is
+#' set to 1, pent is set to 0, etc.  For some parameters there are no
+#' reasonable values (e.g., N in POPAN), so not all parameters will have
+#' defaults.  If a parameter does not have a default or if
+#' \code{default.fixed=F} then the row in the design matrix for that parameter
+#' is all zeroes and its real value will depend on the link function.  For
+#' example, with "logit" link the real parameter value will be 0.5 and for the
+#' log link it will be 1.  As long as the inverse link is defined for 0 it will
+#' not matter in those cases in which the real parameter is not used because it
+#' represents data that do not exist.  For example, in a "CJS" model if initial
+#' captures (releases) only occur every other occasion, but recaptures
+#' (resightings) occurred every occasion, then every other cohort (row) in the
+#' PIM would have no data.  Those rows (cohorts) could be deleted from the
+#' design data and it would not matter if the real parameter was fixed.
+#' However, for the case of a Jolly-Seber type model (eg POPAN or Pradel
+#' models) in which the likelihood includes a probability for the leading
+#' zeroes and first 1 in a capture history (a likelihood component for the
+#' first capture of unmaked animals), and groups represent cohorts that enter
+#' through time, you must fix the real parameters for the unused portion of the
+#' PIM (ie for occasions prior to time of birth for the cohort) such that the
+#' estimated probability of observing the structural 0 is 1.  This is easily
+#' done by setting the pent (probability of entry) to 0 or by setting the
+#' probability of capture to 0 or both.  In that case if
+#' \code{default.fixed=F}, the probabilities for all those parameters would be
+#' incorrectly set to 0.5 for p and something non-zero but not predetermined
+#' for pent because of the multinomial logit.  Now it may be possible that the
+#' model would correctly estimate these as 0 if the real parameters were kept
+#' in the design, but we know what those values are in that case and they need
+#' not be estimated. If it is acceptable to set \code{default.fixed=F}, the
+#' functions such as \code{\link{summary.mark}} recognize the non-estimated
+#' real parameters and they are not shown in the summaries because in essence
+#' they do not exist.  If \code{default.fixed=T} the parameters are displayed
+#' with their fixed value and for \code{summary.mark(mymodel,se=TRUE)}, they
+#' are listed as "Fixed".
+#' 
+#' Missing design data does have implications for specifying formula but only
+#' when interactions are specified.  With missing design data various factors
+#' may not be fully crossed.  For example, with 2 factors A and B, each with 2
+#' levels, the data are fully crossed if there are data with values A1&B1,
+#' A1&B2, A2&B1 and A2&B2.  If data exist for each of the 4 combinations then
+#' you can described the interaction model as ~A*B and it will estimate 4
+#' values.  However, if data are missing for one of more of the 4 cells then
+#' the "interaction" formula should be specified as ~-1+A:B or ~-1+B:A or
+#' ~-1+A%in%B or ~-1+B%in%A to estimate all of the parameters represented by
+#' the combinations with data.  An example of this could be a marking program
+#' with multiple sites which resighted at all occasions but which only marked
+#' at sites on alternating occasions.  In that case time is nested within site
+#' and time-site interaction models would be specified as ~-1+time:site.
+#' 
+#' The argument \code{title} supplies a character string that is used to label
+#' the output. The argument \code{model.name} is a descriptor for the model
+#' used in the analysis.  The code constructs a model name from the formula
+#' specified in the call (e.g., \code{Phi(~1)p(~time)}) but on occasion the
+#' name may be too long or verbose, so it can be over-ridden with the
+#' \code{model.name} argument.
+#' 
+#' The final argument \code{initial} can be used to provide initial estimates
+#' for the beta parameters. It is either 1) a single starting value for each
+#' parameter, 2) an unnamed vector of values (one for each parameter), 3) named
+#' vector of values, or 4) the name of \code{mark} object that has already been
+#' run. For cases 3 and 4, the code only uses appropriate initial beta
+#' estimates in which the column names of the design matrix (for model) or
+#' vector names match the column names in the design matrix of the model to be
+#' run.  Any remaining beta parameters without an initial value specified are
+#' assigned a 0 initial value.  If case 4 is used the models must have the same
+#' number of rows in the design matrix and thus presumably the same structure.
+#' As long as the vector elements are named (#3), the length of the
+#' \code{initial} vector no longer needs to match the number of parameters in
+#' the new model as long as the elements are named. The names can be retrieved
+#' either from the column names of the design matrix or from
+#' \code{rownames(x$results$beta)} where \code{x} is the name of the
+#' \code{mark} object.
+#' 
+#' \code{options} is a character string that is tacked onto the \code{Proc
+#' Estimate} statement for the MARK .inp file.  It can be used to request
+#' options such as NoStandDM (to not standardize the design matrix) or
+#' SIMANNEAL (to request use of the simulated annealing optimization method) or
+#' any existing or new options that can be set on the estimate proc.
+#' 
+#' @param data Data list resulting from function \code{\link{process.data}}
+#' @param ddl Design data list from function \code{\link{make.design.data}}
+#' @param parameters List of parameter formula specifications
+#' @param title Title for the analysis (optional)
+#' @param model.name Model name to override default name (optional)
+#' @param initial Vector of named or unnamed initial values for beta parameters
+#' or previously run model (optional)
+#' @param call Pass function call when this function is called from another
+#' function (e.g.\code{\link{mark}}) (internal use)
+#' @param default.fixed if TRUE, real parameters for which the design data have
+#' been deleted are fixed to default values
+#' @param options character string of options for Proc Estimate statement in
+#' MARK .inp file
+#' @param profile.int if TRUE, requests MARK to compute profile intervals
+#' @param chat pre-specified value for chat used by MARK in calculations of
+#' model output
+#' @return model: a MARK object except for the elements \code{output} and
+#' \code{results}. See \code{\link{mark}} for a detailed description of the
+#' list contents.
+#' @author Jeff Laake
+#' @export
+#' @seealso \code{\link{process.data}},\code{\link{make.design.data}},
+#' \code{\link{run.mark.model}} \code{\link{mark}}
+#' @keywords model
+#' @examples
+#' 
+#' 
+#' data(dipper)
+#' #
+#' # Process data
+#' #
+#' dipper.processed=process.data(dipper,groups=("sex"))
+#' #
+#' # Create default design data
+#' #
+#' dipper.ddl=make.design.data(dipper.processed)
+#' #
+#' # Add Flood covariates for Phi and p that have different values
+#' #
+#' dipper.ddl$Phi$Flood=0
+#' dipper.ddl$Phi$Flood[dipper.ddl$Phi$time==2 | dipper.ddl$Phi$time==3]=1
+#' dipper.ddl$p$Flood=0
+#' dipper.ddl$p$Flood[dipper.ddl$p$time==3]=1
+#' #
+#' #  Define range of models for Phi
+#' #
+#' Phidot=list(formula=~1)
+#' Phitime=list(formula=~time)
+#' PhiFlood=list(formula=~Flood)
+#' #
+#' #  Define range of models for p
+#' #
+#' pdot=list(formula=~1)
+#' ptime=list(formula=~time)
+#' #
+#' # Make assortment of models
+#' #
+#' dipper.phidot.pdot=make.mark.model(dipper.processed,dipper.ddl,
+#'   parameters=list(Phi=Phidot,p=pdot))
+#' dipper.phidot.ptime=make.mark.model(dipper.processed,dipper.ddl,
+#'   parameters=list(Phi=Phidot,p=ptime))
+#' dipper.phiFlood.pdot=make.mark.model(dipper.processed,dipper.ddl,
+#'   parameters=list(Phi=PhiFlood, p=pdot))
+#' 
+make.mark.model <-
+function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,call=NULL,default.fixed=TRUE,options=NULL,profile.int=FALSE,chat=NULL)
 {
 # -----------------------------------------------------------------------------------------------------------------------
 #
 # make.mark.model -   creates a MARK model object that contains an input file, design matrix
 #                     and design data for MARK.  It is constructed from a data frame, formulas for design matrix
-#                     and optional design components,fixed parameters, and initial values
+#                     ,fixed parameters, and initial values
 #
 # Arguments:
 #
@@ -16,7 +414,6 @@ function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,covari
 # title            - a title for the analysis
 # model.name       - optional model name
 # initial          - vector of initial values for beta parameters or name of a MARK model object with output
-# covariates       - list of covariate names used in added components that are not specified in formulae
 # call             - can be used to pass function call when this function is called from another function (eg mark)
 # simplify         - if TRUE, simplifies PIM structure to match unique number of rows in design matrix
 # default.fixed    - if TRUE, default fixed values are assigned to any parameters missing from the full design data
@@ -148,11 +545,11 @@ function(model){
 #   {
 #      new.indices[mlogit.parameters]=max(new.indices[mlogit.parameters])*(mlogit.list$structure-1)+
 #                                     new.indices[mlogit.parameters] + max(new.indices)
- #
- #    The following code was added to adjust for different model structures within
- #    a stratum across tostratum.  Without it the mlogit structure doesn't not work
- #    for models with sum tostratum interactions.
- #
+#
+#    The following code was added to adjust for different model structures within
+#    a stratum across tostratum.  Without it the mlogit structure doesn't not work
+#    for models with sum tostratum interactions.
+#
 #      for (i in 1:max(mlogit.list$structure))
 #      {
 #         mm=matrix(new.indices[mlogit.parameters][mlogit.list$structure==i],ncol=mlogit.list$ncol)
@@ -180,11 +577,13 @@ function(model){
 
 "renumber.pims" <-
 function(pim,newlist,type){
-if(type=="Triang")
+if(type%in%c("Triang","STriang"))
 {
-   pim=t(pim)
-   pim[lower.tri(pim,TRUE)]=newlist[pim]
-   return(t(pim))
+#   pim=t(pim)
+	pim[pim!=0]=newlist[pim]
+#    pim[lower.tri(pim,TRUE)]=newlist[pim]
+#   return(t(pim))
+    return(pim)
 } else
    return(newlist[pim])
 }
@@ -207,7 +606,7 @@ if(type=="Triang")
 #   invisible()
 #}
 
-"pim.header"<- function(group,param.name,parameters,ncol,stratum,tostratum,strata.labels,mixtures,session=NULL)
+"pim.header"<- function(group,param.name,parameters,ncol,stratum,tostratum,strata.labels,mixtures,session=NULL,socc=NULL)
 {
   if(!is.null(stratum)&length(strata.labels)>0)
      if(!is.null(tostratum))
@@ -219,11 +618,18 @@ if(type=="Triang")
   if(is.null(session))
      session.designation=""
   else
-     session.designation=paste("Session",session)
-  if (parameters$type == "Triang")
+     if(is.null(socc))
+	    session.designation=paste("Session",session)
+	 else
+		 session.designation=paste("Sampling Occasion",session)
+ if (parameters$type == "Triang")
          string = paste(paste("group=", group,sep=""), param.name, stratum.designation, session.designation, 
                            paste(" rows=",ncol," cols=",ncol,sep=""), parameters$type, ";")
-  else
+ else
+	 if (parameters$type == "STriang")
+				   string = paste(paste("group=", group,sep=""), param.name, stratum.designation, session.designation, 
+						   paste(" rows=",(mixtures+parameters$rows)*ncol," cols=",ncol,sep=""), parameters$type, ";")
+	else
       if(mixtures==1)
           string=paste(paste("group=",group,sep=""),param.name,stratum.designation, session.designation, 
                            paste(" rows=1"," cols=",ncol,sep=""),parameters$type,";")
@@ -264,7 +670,7 @@ function(model)
 #  Beginning of simplify.pim.structure function; it recreates input for
 #  MARK and uses an outfile like make.mark.model
 #
-outfile="mxxx.tmp"
+outfile=tempfile("markxxx",tmpdir=getwd(),fileext=".tmp")
 #
 # Use realign.pims to simplify PIM structure
 #
@@ -321,9 +727,10 @@ for (i in 1:length(parameters)) {
      {
          ncol = dim(model$pims[[i]][[j]]$pim)[2]
          string=pim.header(pim[[i]][[j]]$group,param.names[i],parameters[[i]],
-                   ncol,model$pims[[i]][[j]]$stratum,model$pims[[i]][[j]]$tostratum,model$strata.labels,mixtures,model$pims[[i]][[j]]$session)
+                   ncol,model$pims[[i]][[j]]$stratum,model$pims[[i]][[j]]$tostratum,model$strata.labels,
+				   mixtures,model$pims[[i]][[j]]$session,parameters[[i]]$socc)
          write(string, file = outfile, append = TRUE)
-         if(parameters[[i]]$type == "Triang")
+         if(parameters[[i]]$type %in% c("Triang","STriang"))
          {
             newpim=renumber.pims(model$pims[[names(model$parameters)[i]]][[j]]$pim,new.indices,parameters[[i]]$type)
             print.pim(newpim,outfile)
@@ -390,7 +797,7 @@ rownums=match(1:length(unique(new.indices)),new.indices)
 if(length(rownums)==1)
    complete.design.matrix=subset(model$design.matrix,1:dim(model$design.matrix)[1]%in%rownums)
 else
-   complete.design.matrix=model$design.matrix[rownums,]
+   complete.design.matrix=model$design.matrix[rownums,,drop=FALSE]
 # 10 Jan 06; change to accomodate S(.) with known fate where design matrix can
 # become a single element with simplification
 #if(is.vector(complete.design.matrix))
@@ -468,23 +875,31 @@ create.pim=function(nocc,parameters,npar,mixtures)
 {
     ncol=nocc+parameters$num
     mat=NULL
-    if(parameters$type=="Triang")
+    if(parameters$type%in%c("Triang","STriang"))
     {
-        for(k in 1:(nocc+parameters$num))
-        {
-            if(parameters$pim.type=="all")
-            {
-                mat=rbind(mat,c(rep(0,k-1),npar:(npar+ncol-1)))
-                npar=npar+ncol
-            }
-            else
-            {
-               if(parameters$pim.type=="time")
-                   mat=rbind(mat,c(rep(0,k-1),(npar+k-1):(npar+k-1+ncol-1)))
+		nmix=1
+		if(mixtures>1)
+			if(!is.null(parameters$mix)&&parameters$mix)
+				nmix=mixtures+parameters$rows
+		for (j in 1:nmix)
+		{
+		   ncol=nocc+parameters$num
+		   for(k in 1:(nocc+parameters$num))
+           {
+               if(parameters$pim.type=="all")
+               {
+                   mat=rbind(mat,c(rep(0,k-1),npar:(npar+ncol-1)))
+                   npar=npar+ncol
+               }
                else
-                   mat=rbind(mat,c(rep(0,k-1),rep(npar,ncol)))
-            }
-            ncol=ncol-1
+               {
+                  if(parameters$pim.type=="time")
+                      mat=rbind(mat,c(rep(0,k-1),(npar+k-1):(npar+k-1+ncol-1)))
+                  else
+                      mat=rbind(mat,c(rep(0,k-1),rep(npar,ncol)))
+               }
+               ncol=ncol-1
+		   }
         }
 #        if(parameters$pim.type!="all")
 #            npar=max(mat)+1
@@ -521,10 +936,11 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 
 #
 #  *******************  END OF INTERNAL FUNCTIONS    *********************************
+  simplify=TRUE
 #
 # Outfile is assigned a temporary name
 #
-  outfile="mxxx.tmp"
+  outfile=tempfile("markxxx",tmpdir=getwd(),fileext=".tmp")
 #
 #  check to make sure all entered as lists
 #
@@ -545,7 +961,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   if(length(parameters)>0)
   for(i in 1:length(parameters))
      for(j in 1:length(names(parameters[[i]])))
-        if(!(names(parameters[[i]])[j]%in%c("fixed","formula","component","component.name","link","share","remove.intercept","default")))
+        if(!(names(parameters[[i]])[j]%in%c("fixed","formula","link","share","remove.intercept","default")))
         {
            cat("\nInvalid model specification for parameter ",names(parameters)[i],".\nUnrecognized element ",names(parameters[[i]])[j])
            stop()
@@ -555,9 +971,6 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #
   ch=data$data$ch
   mixtures=data$mixtures
-  poolpandc=FALSE
-  poolgammas=FALSE
-  pool.ps=FALSE
   nocc=data$nocc
   nocc.secondary=data$nocc.secondary
   nstrata=data$nstrata
@@ -578,42 +991,15 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   }
   for(i in 1:length(parameters))
   {
-     if(names(parameters)[i]!="p2" &names(parameters)[i]!="c" & names(parameters)[i]!="GammaPrime")
-     {
-        if(is.null(parameters[[i]]$formula))parameters[[i]]$formula=~1
-        if((parameters[[i]]$formula==~group) & number.of.groups==1)parameters[[i]]$formula=~1
-     }
-     else
 #
-#    The following handles sharing of p and c in closed models and gamma in robust models;
-#    if p&c not shared it sets default c model to ~1
+#     For parameters that can be possibly shared, see if they are not shared and if not then create
+#     default formula if one not specified
 #
-     {
-        if(names(parameters)[i]=="c")
-           if(!parameters$p$share)
-           {
-              if(is.null(parameters$c$formula))parameters$c$formula=~1
-              poolpandc=FALSE
-           }
-           else
-              poolpandc=TRUE
-        if(names(parameters)[i]=="p2")
-           if(!parameters$p1$share)
-           {
-              if(is.null(parameters$p2$formula))parameters$p2$formula=~1
-              pool.ps=FALSE
-           }
-           else
-              pool.ps=TRUE
-        if(names(parameters)[i]=="GammaPrime")
-           if(!parameters$GammaDoublePrime$share)
-           {
-              if(is.null(parameters$GammaPrime$formula))parameters$GammaPrime$formula=~1
-              poolgammas=FALSE
-           }
-           else
-              poolgammas=TRUE
-     }
+	  if(!is.null(parameters[[i]]$share)&&!parameters[[i]]$share)
+      {
+		  shared_par=parameters[[i]]$pair
+	      if(is.null(parameters[[shared_par]]$formula))parameters[[shared_par]]$formula=~1
+	  }
 #
 #     Test validity of link functions
 # 
@@ -651,65 +1037,37 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 # In the design data for p a covariate "c" is added to the recapture parameters and for
 # a covariate emigrate for the gammaDoublePrime parameters.
 #
-  if(!is.null(parameters$p))
-     if(!is.null(parameters$c))
-        if(poolpandc)
-        {
-           if(dim(ddl$p)[2]==dim(ddl$c)[2])
-           {
-              ddl$p=rbind(ddl$p,ddl$c)
-              ddl$p$c=c(rep(0,(dim(ddl$p)[1]-dim(ddl$c)[1])),rep(1,dim(ddl$c)[1]))
-              row.names(ddl$p)=1:dim(ddl$p)[1]
-           }
-           else
-           {
-              cat("Error: for a shared p&c model, their design data columns must match\n. If you add design data to p it must also be added to c.\n")
-              cat("Columns of p: ",names(ddl$p),"\n") 
-              cat("Columns of c: ",names(ddl$c),"\n")
-              stop("Function terminated\n") 
-           }
-        }
-  if(!is.null(parameters$p1))
-     if(!is.null(parameters$p2))
-        if(pool.ps)
-        {
-           if(dim(ddl$p1)[2]==dim(ddl$p2)[2])
-           {
-              ddl$p1=rbind(ddl$p1,ddl$p2)
-              ddl$p1$p2=c(rep(0,(dim(ddl$p1)[1]-dim(ddl$p2)[1])),rep(1,dim(ddl$p2)[1]))
-              row.names(ddl$p1)=1:dim(ddl$p1)[1]
-           }
-           else
-           {
-              cat("Error: for a shared p1&p2 model, their design data columns must match\n. If you add design data to p1 it must also be added to p2.\n")
-              cat("Columns of p1: ",names(ddl$p1),"\n")
-              cat("Columns of p2: ",names(ddl$p2),"\n")
-              stop("Function terminated\n")
-           }
-        }
-  if(!is.null(parameters$GammaDoublePrime))
-     if(!is.null(parameters$GammaPrime))
-        if(poolgammas)
-        {
-           if(dim(ddl$GammaDoublePrime)[2]==dim(ddl$GammaPrime)[2])
-           {
-              ddl$GammaDoublePrime=rbind(ddl$GammaDoublePrime,ddl$GammaPrime)
-              ddl$GammaDoublePrime$emigrate=c(rep(1,(dim(ddl$GammaDoublePrime)[1]-dim(ddl$GammaPrime)[1])),rep(0,dim(ddl$GammaPrime)[1]))
-              row.names(ddl$GammaDoublePrime)=1:dim(ddl$GammaDoublePrime)[1]
-           }
-           else
-           {
-              cat("Error: for a shared Gamma model, their design data columns must match\n. If you add design data to GammaPrime it must also be added to GammaDoublePrime.\n")
-              cat("Columns of GammaPrime: ",names(ddl$GammaPrime),"\n")
-              cat("Columns of GammaDoublePrime: ",names(ddl$GammaDoublePrime),"\n")
-              stop("Function terminated\n")
-           }
-        }
+   for(i in 1:length(parameters))
+   {
+#
+#     For parameters that can be possibly shared, if they are shared, pool design data as long as dimensions match
+#
+	   if(!is.null(parameters[[i]]$share)&&parameters[[i]]$share)
+       {
+	       shared_par=parameters[[i]]$pair
+	       dim1=dim(ddl[[names(parameters)[i]]])
+		   dim2=dim(ddl[[shared_par]])
+           if(dim1[2]==dim2[2])
+		   {
+			   ddl[[names(parameters)[i]]]=rbind(ddl[[names(parameters)[i]]],ddl[[shared_par]])
+               ddl[[names(parameters)[i]]][shared_par]=c(rep(0,dim1[1]),rep(1,dim2[1]))
+		       row.names(ddl[[names(parameters)[i]]])=1:dim(ddl[[names(parameters)[i]]])[1]
+		   } else
+		   {
+			   cat(paste("Error: for a shared ",paste(names(parameters)[i],shared_par,sep="&"),
+				" model, their design data columns must match\n. If you add design data to one it must also be added to the other.\n"))
+			   cat(paste("Columns of",names(parameters)[i]," : ",names(ddl[i]),"\n"))
+			   cat(paste("Columns of",shared_par,": ",names(ddl[[shared_par]]),"\n"))
+			   stop("Function terminated\n") 
+		   }
+	   }
+   }
 #
 # For each parameter type determine which values in the formula are covariates that need to be
 # added to design data and put in data portion of input file.
 #
   xcov=list()
+  covariates=NULL
   time.dependent=list()
   session.dependent=list()
   for(i in 1:length(parameters))
@@ -778,7 +1136,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
      string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype)
   else
      string=paste("proc title ",title,";\nproc chmatrix occasions=",sum(nocc.secondary)," groups=",number.of.groups," etype=",etype)
-  if(etype=="Multistrata"|etype=="ORDMS"|etype=="CRDMS"|etype=="MSLiveDead")string=paste(string," strata=",data$nstrata,sep="")
+  if(model.list$strata)string=paste(string," strata=",data$nstrata,sep="")
   if(!is.null(covariates))
   {
      covariates=unique(covariates)
@@ -786,11 +1144,13 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   }
   if(mixtures!=1)
       string=paste(string," mixtures =",mixtures)
+  if(data$model=="MultScalOcc")
+	  string=paste(string," mixtures =",length(levels(ddl$p$time)))
   time.int=data$time.intervals
-  if(data$reverse)time.int[time.int==0]=1
+  if(!is.null(data$reverse) &&(data$reverse | data$model=="MultScalOcc")) time.int[time.int==0]=1
   string=paste(string," ICMeans NoHist hist=",dim(zz)[1],
            ";\n time interval ",paste(time.int,collapse=" "),";")
-  if(etype=="Multistrata"|etype=="ORDMS"|etype=="MSLiveDead"|etype=="CRDMS")string=paste(string,"\n strata=",paste(data$strata.labels[1:data$nstrata],collapse=" "),";",sep="")
+  if(model.list$strata)string=paste(string,"\n strata=",paste(data$strata.labels[1:data$nstrata],collapse=" "),";",sep="")
   if(!is.null(covariates))
   {
      string=paste(string,"\nicovariates ",paste(covariates,collapse=" "),";")
@@ -863,11 +1223,6 @@ create.agenest.var=function(data,init.agevar,time.intervals)
     for(i in 1:length(parameters))
     {
        model.name=paste(model.name,param.names[i],"(",paste(parameters[[i]]$formula,collapse=""),sep="")
-       if(!is.null(parameters[[i]]$component))
-          if(is.null(parameters[[i]]$component.name))
-             model.name=paste(model.name,"+component",sep="")
-          else
-             model.name=paste(model.name,"+",parameters[[i]]$component.name,sep="")
        model.name=paste(model.name,")",sep="")
      }
   }
@@ -894,13 +1249,24 @@ create.agenest.var=function(data,init.agevar,time.intervals)
      k=0
      for(j in 1:number.of.groups)
      {
-       for (jj in 1:nstrata)
+	   sub.stratum=0
+	   if(!is.null(parameters[[i]]$sub.stratum))sub.stratum=parameters[[i]]$sub.stratum
+	   all.tostrata=FALSE
+	   if(sub.stratum==-1)
+	   {
+		   all.tostrata=TRUE
+		   sub.stratum=0
+	   }
+       for (jj in 1:(nstrata-sub.stratum))
        {
           other.strata=1
           if(!is.null(parameters[[i]]$tostrata))
           {
              nsubtract.stratum=match(parameters[[i]]$subtract.stratum,data$strata.labels)
-             other.strata= sequence(nstrata)[sequence(nstrata)!=nsubtract.stratum[jj]]
+			 if(!all.tostrata)
+				 other.strata= sequence(nstrata)[sequence(nstrata)!=nsubtract.stratum[jj]]
+			 else
+				 other.strata= 1:nstrata		 
           }
           for(to.stratum in other.strata)
           {
@@ -925,6 +1291,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                      else
                          pim[[i]][[k]]$pim=create.pim(nocc.secondary[l],parameters[[i]],npar,mixtures)
                      pim[[i]][[k]]$session=l
+					 pim[[i]][[k]]$session.label=levels(ddl[[i]]$session)[l]
                   }
                   pim[[i]][[k]]$group=j
                   if(length(data$strata.labels)>0) pim[[i]][[k]]$stratum=jj
@@ -1063,7 +1430,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
            ncol=dim(pim[[i]][[j]]$pim)[2]
            string=pim.header(pim[[i]][[j]]$group,param.names[i],parameters[[i]],
                    ncol,pim[[i]][[j]]$stratum,pim[[i]][[j]]$tostratum,
-                   data$strata.labels,mixtures,pim[[i]][[j]]$session)
+                   data$strata.labels,mixtures,pim[[i]][[j]]$session,parameters[[i]]$socc)
            write(string,outfile,append=TRUE)
            print.pim( pim[[i]][[j]]$pim,outfile)
         }
@@ -1076,9 +1443,21 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   for(i in 1:length(parameters))
   {
   if(is.null(parameters[[i]]$formula))
+  {
      design.matrix[[i]]=list()
-  else
+  } else
   {    
+#  Next, if share, combine full ddl
+	fullddl=full.ddl[[names(parameters)[i]]]
+	if(!is.null(parameters[[i]]$share)&&parameters[[i]]$share)
+	{	  
+		  shared_par=parameters[[i]]$pair
+		  dim1=dim(fullddl)
+		  dim2=dim(full.ddl[[shared_par]])
+		  fullddl=rbind(fullddl,full.ddl[[shared_par]])
+		  fullddl[shared_par]=c(rep(0,dim1[1]),rep(1,dim2[1]))
+		  row.names(fullddl)=1:dim(fullddl)[1]
+	  } 
 #
 #    Calculate number of parameters for this type
 #
@@ -1107,13 +1486,9 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                   dm=dm[,-intercept.column]
             }
         }
-        maxpar=dim(full.ddl[[parx]])[1]
-        if(poolpandc&names(parameters)[i]=="p")
-            maxpar=maxpar+dim(full.ddl[["c"]])[1]
-        if(pool.ps&names(parameters)[i]=="p1")
-            maxpar=maxpar+dim(full.ddl[["p2"]])[1]
-        if(poolgammas&names(parameters)[i]=="GammaDoublePrime")
-            maxpar=maxpar+dim(full.ddl[["GammaPrime"]])[1]
+        maxpar=dim(fullddl)[1]
+#		if(!is.null(parameters[[names(parameters)[i]]]$share) && parameters[[names(parameters)[i]]]$share)
+#			maxpar=maxpar + dim(full.ddl[[parameters[[names(parameters)[i]]]$pair]])[1]  		
         design.matrix[[i]]=matrix(0,ncol=dim(dm)[2],nrow=maxpar)
         if(dim(design.matrix[[i]][as.numeric(row.names(ddl[[parx]])),,drop=FALSE])[1]==dim(dm)[1])
            design.matrix[[i]][as.numeric(row.names(ddl[[parx]])),]=dm
@@ -1125,7 +1500,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #       It can add interactions that are not relevant.  The results are columns in the design
 #       matrix that are all zero.  These are stripped out here.
 #
-        col.sums=apply(design.matrix[[i]],2,sum)
+        col.sums=apply(design.matrix[[i]],2,function(x) sum(abs(x)))
         design.matrix[[i]]=design.matrix[[i]][,col.sums!=0,drop=FALSE]
 #
 #       Next substitute variable names for covariates into design matrix 
@@ -1152,36 +1527,36 @@ create.agenest.var=function(data,init.agevar,time.intervals)
              for(k in which.cols)
                if(all(design.matrix[[i]][,k]==1 | design.matrix[[i]][,k]==0))
                   if(time.dependent[[parx]][j])
-                     if(!is.null(full.ddl[[parx]]$session))
+                     if(!is.null(fullddl$session))
                         if(session.dependent[[parx]][j])
                             design.matrix[[i]][,k][design.matrix[[i]][,k]==1]=
-                                paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$session[design.matrix[[i]][,k]==1]),sep="")
+                                paste(xcov[[parx]][j],as.character(fullddl$session[design.matrix[[i]][,k]==1]),sep="")
                         else
                            design.matrix[[i]][,k][design.matrix[[i]][,k]==1]=
-                                paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$session[design.matrix[[i]][,k]==1]),
-                                  as.character(full.ddl[[parx]]$time[design.matrix[[i]][,k]==1]),sep="")
+                                paste(xcov[[parx]][j],as.character(fullddl$session[design.matrix[[i]][,k]==1]),
+                                  as.character(fullddl$time[design.matrix[[i]][,k]==1]),sep="")
                      else   
-                        design.matrix[[i]][,k][design.matrix[[i]][,k]==1]=paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$time[design.matrix[[i]][,k]==1]),sep="")
+                        design.matrix[[i]][,k][design.matrix[[i]][,k]==1]=paste(xcov[[parx]][j],as.character(fullddl$time[design.matrix[[i]][,k]==1]),sep="")
                   else
                      design.matrix[[i]][,k][design.matrix[[i]][,k]==1]=xcov[[parx]][j]
                else
                   if(time.dependent[[parx]][j])
                   {
-                     if(!is.null(full.ddl[[parx]]$session))
+                     if(!is.null(fullddl$session))
                      {
                         if(session.dependent[[parx]][j])
                            design.matrix[[i]][,k][design.matrix[[i]][,k]!=0]=
-                              paste("product(",paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$session[design.matrix[[i]][,k]!=0]),sep=""),
+                              paste("product(",paste(xcov[[parx]][j],as.character(fullddl$session[design.matrix[[i]][,k]!=0]),sep=""),
                                        ",",design.matrix[[i]][,k][design.matrix[[i]][,k]!=0],")",sep="")
                         else
                            design.matrix[[i]][,k][design.matrix[[i]][,k]!=0]=
-                              paste("product(",paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$session[design.matrix[[i]][,k]!=0]),
-                                      as.character(full.ddl[[parx]]$time[design.matrix[[i]][,k]!=0]),sep=""),
+                              paste("product(",paste(xcov[[parx]][j],as.character(fullddl$session[design.matrix[[i]][,k]!=0]),
+                                      as.character(fullddl$time[design.matrix[[i]][,k]!=0]),sep=""),
                                        ",",design.matrix[[i]][,k][design.matrix[[i]][,k]!=0],")",sep="")                     
                      }
                      else
                         design.matrix[[i]][,k][design.matrix[[i]][,k]!=0]=
-                           paste("product(",paste(xcov[[parx]][j],as.character(full.ddl[[parx]]$time[design.matrix[[i]][,k]!=0]),sep=""),
+                           paste("product(",paste(xcov[[parx]][j],as.character(fullddl$time[design.matrix[[i]][,k]!=0]),sep=""),
                                     ",",design.matrix[[i]][,k][design.matrix[[i]][,k]!=0],")",sep="")
                   }
                   else
@@ -1190,33 +1565,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
           }
 
         row.names(design.matrix[[i]])=NULL
-#     }
-#
-#    If there any additional design components add them on here
-#
-     if(is.null(parameters[[i]]$component))
-        design.matrix[[i]]=as.data.frame(design.matrix[[i]])
-     else
-     {
-        savenames=colnames(design.matrix[[i]])
-        if(is.null(savenames))savenames="(Intercept)"
-        design.matrix[[i]]=cbind(design.matrix[[i]],parameters[[i]]$component)
-        if(is.data.frame(parameters[[i]]$component))
-           savenames=c(savenames,names(parameters[[i]]$component))
-        else
-        {
-            if(is.null(parameters[[i]]$component.name)) 
-                assigned.name="cov"
-            else
-                assigned.name=parameters[[i]]$component.name
-            if(is.matrix(parameters[[i]]$component))
-               savenames=c(savenames,paste(assigned.name,1:dim(parameters[[i]]$component)[2],sep=""))
-            else
-               savenames=c(savenames,assigned.name)
-        }
-        if(!is.data.frame(design.matrix[[i]]))design.matrix[[i]]=as.data.frame(design.matrix[[i]])
-        names(design.matrix[[i]])=savenames
-     }
+     design.matrix[[i]]=as.data.frame(design.matrix[[i]])
      if(parameters[[i]]$formula=="~1")
         names(design.matrix[[i]])[1]="(Intercept)"
      names(design.matrix[[i]])=paste(names(parameters)[i],names(design.matrix[[i]]),sep=":")
@@ -1235,36 +1584,17 @@ create.agenest.var=function(data,init.agevar,time.intervals)
         mat=NULL
         lastpim=length( pim[[length(parameters)]])
         lastindex=max(pim[[length(parameters)]][[lastpim]]$pim)
-        if(poolpandc & names(parameters)[i]=="c")
-        {
-           minrow=pim[["c"]][[1]]$pim[1,1]
-           maxrow=max(pim[["c"]][[length(pim[["c"]])]]$pim)
-           if(minrow>1)
-              mat=matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=minrow-1)
-           mat=rbind(mat,as.matrix(design.matrix[[i]]))
-           if(i<length(parameters))
-               mat=rbind(mat,matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=lastindex-maxrow ))
-        } else
-        if(pool.ps & names(parameters)[i]=="p2")
-        {
-           minrow=pim[["p2"]][[1]]$pim[1,1]
-           maxrow=max(pim[["p2"]][[length(pim[["p2"]])]]$pim)
-           if(minrow>1)
-              mat=matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=minrow-1)
-           mat=rbind(mat,as.matrix(design.matrix[[i]]))
-           if(i<length(parameters))
-               mat=rbind(mat,matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=lastindex-maxrow ))
-        } else
-        if(poolgammas & names(parameters)[i]=="GammaPrime")
-        {
-           minrow=pim[["GammaPrime"]][[1]]$pim[1,1]
-           maxrow=max(pim[["GammaPrime"]][[length(pim[["GammaPrime"]])]]$pim)
-           if(minrow>1)
-              mat=matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=minrow-1)
-           mat=rbind(mat,as.matrix(design.matrix[[i]]))
-           if(i<length(parameters))
-               mat=rbind(mat,matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=lastindex-maxrow ))
-        } else
+		pair=parameters[[i]]$pair
+		if(!is.null(pair) && pair !="" && !is.null(parameters[[pair]]$share) && parameters[[pair]]$share)
+		{
+			minrow=pim[[names(parameters)[i]]][[1]]$pim[1,1]
+			maxrow=max(pim[[names(parameters)[i]]][[length(pim[[names(parameters)[i]]])]]$pim)
+			if(minrow>1)
+				mat=matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=minrow-1)
+			mat=rbind(mat,as.matrix(design.matrix[[i]]))
+			if(i<length(parameters))
+				mat=rbind(mat,matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=lastindex-maxrow ))
+		} else
         {    
            if(i>1)
               mat=matrix("0",ncol=dim(design.matrix[[i]])[2],nrow=nrows)
@@ -1375,12 +1705,33 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                     x.indices=as.vector(t(pim[[parx]][[kk]]$pim))
                     x.indices=x.indices[x.indices!=0]
                     max.logit.number=max.logit.number+1
-                   string=c(string,paste("mlogit(",rep(max.logit.number,length(x.indices)),")",sep=""))
+                    string=c(string,paste("mlogit(",rep(max.logit.number,length(x.indices)),")",sep=""))
                  }
              }else
              {
-                 stop(paste("Mlogit link not allowed with parameter",parx))
-             }
+				 if(parx %in% c("pi","Omega"))
+				 {
+					 nsets=length(pim[[parx]])
+					 for (kk in 1:nsets)
+					 {
+						 logit.numbers=max.logit.number+rep(1:nrow(full.ddl[[parx]])/(nstrata-1),nstrata-1)
+						 max.logit.number=max(logit.numbers)
+						 string=c(string,paste("mlogit(",logit.numbers,")",sep=""))
+					 }
+					 
+					 
+				 } else
+				 {
+					 if(parx=="Omega")
+					 {
+
+						 
+					 }else
+					 {
+                         stop(paste("Mlogit link not allowed with parameter",parx))
+                     }
+				 }
+			 }
            }
         } else
         {
@@ -1411,28 +1762,28 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   ipos=0
   for(i in 1:length(parameters))
   {
-    parx=names(parameters)[i]
-    plimit=dim(full.ddl[[parx]])[1]
-    stratum.strings=rep("",plimit)
-    if(!is.null(full.ddl[[parx]]$stratum)) stratum.strings=paste(" s",full.ddl[[parx]]$stratum,sep="")
-    if(!is.null(full.ddl[[parx]]$tostratum)) stratum.strings=paste(stratum.strings," to",full.ddl[[parx]]$tostratum,sep="")
-    strings=paste(param.names[i],stratum.strings," g",full.ddl[[parx]]$group,sep="")
-    if(!is.null(full.ddl[[parx]]$cohort))strings=paste(strings," c",full.ddl[[parx]]$cohort,sep="")
-	if(!is.null(full.ddl[[parx]]$occ.cohort))strings=paste(strings," c",full.ddl[[parx]]$occ.cohort,sep="")
-	if(!is.null(full.ddl[[parx]]$age))strings=paste(strings," a",full.ddl[[parx]]$age,sep="")
-	if(!is.null(full.ddl[[parx]]$occ))strings=paste(strings," o",full.ddl[[parx]]$occ,sep="")
-	if(model.list$robust && parameters[[parx]]$secondary)
-       strings=paste(strings," s",full.ddl[[parx]]$session,sep="")
-    if(!is.null(full.ddl[[parx]]$time))strings=paste(strings," t",full.ddl[[parx]]$time,sep="")
-    if(mixtures >1 && !is.null(parameters[[i]]$mix) &&parameters[[i]]$mix)
-       strings=paste(strings," m",full.ddl[[parx]]$mixture,sep="")
-    rnames=c(rnames,strings)
-    if(!simplify)
-    {
-       strings=paste("rlabel(",ipos+1:plimit,")=",strings,";",sep="")
-       labstring=c(labstring,strings)
-       ipos=ipos+plimit
-    }
+      parx=names(parameters)[i]
+      plimit=dim(full.ddl[[parx]])[1]
+      stratum.strings=rep("",plimit)
+      if(!is.null(full.ddl[[parx]]$stratum)) stratum.strings=paste(" s",full.ddl[[parx]]$stratum,sep="")
+      if(!is.null(full.ddl[[parx]]$tostratum)) stratum.strings=paste(stratum.strings," to",full.ddl[[parx]]$tostratum,sep="")
+      strings=paste(param.names[i],stratum.strings," g",full.ddl[[parx]]$group,sep="")
+      if(!is.null(full.ddl[[parx]]$cohort))strings=paste(strings," c",full.ddl[[parx]]$cohort,sep="")
+	  if(!is.null(full.ddl[[parx]]$occ.cohort))strings=paste(strings," c",full.ddl[[parx]]$occ.cohort,sep="")
+	  if(!is.null(full.ddl[[parx]]$age))strings=paste(strings," a",full.ddl[[parx]]$age,sep="")
+	  if(!is.null(full.ddl[[parx]]$occ))strings=paste(strings," o",full.ddl[[parx]]$occ,sep="")
+	  if(model.list$robust && parameters[[parx]]$secondary)
+         strings=paste(strings," s",full.ddl[[parx]]$session,sep="")
+      if(!is.null(full.ddl[[parx]]$time))strings=paste(strings," t",full.ddl[[parx]]$time,sep="")
+      if(mixtures >1 && !is.null(parameters[[i]]$mix) &&parameters[[i]]$mix)
+         strings=paste(strings," m",full.ddl[[parx]]$mixture,sep="")
+      rnames=c(rnames,strings)
+      if(!simplify)
+      {
+         strings=paste("rlabel(",ipos+1:plimit,")=",strings,";",sep="")
+         labstring=c(labstring,strings)
+         ipos=ipos+plimit
+      }
   }
   if(!simplify) write(labstring,file=outfile,append=TRUE)
   row.names(complete.design.matrix)=rnames
@@ -1492,7 +1843,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
         if(model$parameters[[parx]]$link=="sin")
         {
            dm=model$simplify$design.matrix
-           rows=unique(model$simplify$pim.translation[sort(unique(as.vector(sapply(model$pims[[parx]],function(x)x$pim[x$pim>0]))))])
+           rows=unique(model$simplify$pim.translation[sort(unique(as.vector(unlist(sapply(model$pims[[parx]],function(x)x$pim[x$pim>0])))))])
            if(length(grep('[[:alpha:]]',as.vector(dm[rows,,drop=FALSE])))>0)
               stop("\nCannot use sin link with covariates")
            dm=suppressWarnings(matrix(as.numeric(dm),nrow=dim(dm)[1],ncol=dim(dm)[2]))
@@ -1513,3 +1864,4 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   class(model)=c("mark",data$model)
   return(model)
 }
+

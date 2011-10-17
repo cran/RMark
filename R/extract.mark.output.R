@@ -1,18 +1,47 @@
-"extract.mark.output" <-
-function(out,model,adjust,realvcv=FALSE)
+#' Extract results from MARK output file (internal use)
+#' 
+#' Extracts the lnl, AICc, npar, beta and real estimates and returns a list of
+#' these results for inclusion in the \code{mark} object. The elements
+#' \code{beta} and \code{real} are dataframes with fields estimate,se,lcl,ucl.
+#' This function was written for internal use and is called by
+#' \code{\link{run.mark.model}}. It is documented here for more advanced users
+#' that might want to modify the code or adapt for their own use.
+#' 
+#' 
+#' @param out output from MARK analysis (\code{model$output})
+#' @param model mark model object
+#' @param adjust if TRUE, adjusts number of parameters (npar) to number of
+#' columns in design matrix, modifies AIC and records both
+#' @param realvcv if TRUE the vcv matrix of the real parameters is extracted
+#' and stored in the model results
+#' @param vcvfile name of vcv file output
+#' @return result: list of extracted output elements
+#' \item{lnl}{-2xLog-likelihood} \item{deviance}{Difference between saturated
+#' model and lnl} \item{npar}{Number of model parameters}
+#' \item{AICc}{Small-sample corrected AIC value using npar and n}
+#' \item{npar.unadjusted}{Number of model parameters as reported by MARK if
+#' npar was adjusted} \item{AICc.unadjusted}{Small-sample corrected AIC value
+#' using npar.unadjusted and n} \item{n}{Effective sample size reported by
+#' MARK; used in AICc calculation} \item{beta}{Dataframe of beta parameters
+#' with fields: estimate, se, lcl, ucl} \item{real}{Dataframe of real
+#' parameters with fields: estimate, se, lcl, ucl}
+#' \item{derived.vcv}{variance-covariance matrix for derived parameters if any}
+#' \item{covariate.values}{dataframe with fields Variable and Value which are
+#' the covariate names and value used for real parameter estimates in the MARK
+#' output} \item{singular}{indices of beta parameters that are non-estimable or
+#' at a boundary} \item{real.vcv}{variance-covariance matrix for real
+#' parameters (simplified) if realvcv=TRUE}
+#' @author Jeff Laake
+#' @seealso \code{\link{run.mark.model}}
+#' @keywords utility
+extract.mark.output <-
+function(out,model,adjust,realvcv=FALSE,vcvfile)
 {
 # ----------------------------------------------------------------------------------------
 #
 #  extract.mark.output     extracts the lnl, AICc, npar, beta and real estimates 
 #                          and returns a list of these
 #                          beta and real are dataframes with names estimate,se,lcl,ucl
-#
-#  Arguments:
-#     out            - output from MARK analysis
-#     model          - mark model object
-#     adjust         - if TRUE, adjusts npar to # of cols in design matrix, modifies AIC and records both
-#     realvcv        - if TRUE the vcv matrix of the real parameters is extracted and stored in the model results
-#
 #  Value:
 #     result         - list of extracted output elements like npar, n(ESS), deviance etc
 #
@@ -27,10 +56,9 @@ function(out,model,adjust,realvcv=FALSE)
   design.matrix=model$design.matrix
   links=model$links
   derived=setup.model(model$model,model$nocc)$derived
-  outfile="markxxx.inp"
+  outfile=tempfile("markxxx",tmpdir=getwd(),fileext=".tmp")
   nreal=dim(design.matrix)[1]
   nbeta=dim(design.matrix)[2]
-  unlink(paste(outfile,".tmp",sep=""))
   x=grep("Effective sample size ",out,ignore.case=TRUE)
   if(length(x)==0)
     stop("MARK did not run properly.  If error message was not shown, re-run MARK with invisible=FALSE")
@@ -42,6 +70,8 @@ function(out,model,adjust,realvcv=FALSE)
   npar=type.convert(substr(out[x],regexpr("=",out[x])+1,nchar(out[x])))
   x=grep("DEVIANCE ",out,ignore.case=TRUE)
   deviance=type.convert(substr(out[x],regexpr("=",out[x])+1,nchar(out[x])))[1]
+  x = grep("DEVIANCE Degrees of Freedom ", out, ignore.case = TRUE)
+  deviance.df = type.convert(substr(out[x], regexpr("=", out[x])+1, nchar(out[x])))[1]
   x=grep("AICc",out,ignore.case=TRUE)
   AICc=type.convert(substr(out[x],regexpr("=",out[x])+1,nchar(out[x])))
   if(length(links)==1)
@@ -83,8 +113,8 @@ function(out,model,adjust,realvcv=FALSE)
        }
      }
   }
-  write(save,file=paste(outfile,".tmp",sep=""))
-  x=read.fwf(file=paste(outfile,".tmp",sep=""),widths=c(26,16,16,16,16),col.names=c("","estimate","se","lcl","ucl"))
+  write(save,outfile)
+  x=read.fwf(file=outfile,widths=c(26,16,16,16,16),col.names=c("","estimate","se","lcl","ucl"))
   dimx=dim(x)[2]
   beta=as.data.frame(x[,((dimx-4+1):dimx)])
   names(beta)=c("estimate","se","lcl","ucl")
@@ -121,7 +151,7 @@ function(out,model,adjust,realvcv=FALSE)
   }
   else
     npar.unadjusted=NULL    
-  unlink(paste(outfile,".tmp",sep=""))
+  unlink(outfile)
 #
 # Extract real parameters from text file; This could be done from binary file but the text file
 # also denotes the fixed parameters
@@ -137,14 +167,14 @@ function(out,model,adjust,realvcv=FALSE)
 		   ind= regexpr("\\*\\*\\*\\*:",out[i])
        if(ind!=-1& ind<=20)
        {
-          write(out[i],file=paste(outfile,".tmp",sep=""),append=TRUE)
+          write(out[i],file=outfile,append=TRUE)
           j=j+1
        }
     }
   }
-  x=read.fwf(file=paste(outfile,".tmp",sep=""),widths=c(26,16,16,16,16,20),col.names=c("","estimate","se","lcl","ucl","fixed"),
+  x=read.fwf(file=outfile,widths=c(26,16,16,16,16,20),col.names=c("","estimate","se","lcl","ucl","fixed"),
                                as.is=TRUE)
-  unlink(paste(outfile,".tmp",sep=""))
+  unlink(outfile)
   x$note=""
   x$fixed[is.na(x$fixed)]=  "       "
   x$note[substr(as.character(x$fixed),3,7)!="Fixed"]=x$fixed[substr(as.character(x$fixed),3,7)!="Fixed"]
@@ -158,11 +188,11 @@ function(out,model,adjust,realvcv=FALSE)
      row.names(real)=row.names(model$simplify$design.matrix)
 #  if(!is.factor(real$fixed))real$fixed=""
   if(!is.factor(real$note))real$note=""
-  if(file.exists("markxxx.vcv"))
+  if(file.exists(vcvfile))
      if(os=="mingw32")
-        param=read.mark.binary("markxxx.vcv")
+        param=read.mark.binary(vcvfile)
      else
-        param=read.mark.binary.linux("markxxx.vcv")
+        param=read.mark.binary.linux(vcvfile)
   else
   {
      param=NULL
@@ -173,11 +203,11 @@ function(out,model,adjust,realvcv=FALSE)
   else
     real.vcv=NULL
   if(is.null(npar.unadjusted))
-     return(list(lnl=lnl,deviance=deviance,npar=npar,n=n,AICc=AICc,beta=beta,real=real,beta.vcv=param$beta.vcv,derived=param$derived,derived.vcv=param$derived.vcv,
+     return(list(lnl=lnl,deviance=deviance,deviance.df=deviance.df,npar=npar,n=n,AICc=AICc,beta=beta,real=real,beta.vcv=param$beta.vcv,derived=param$derived,derived.vcv=param$derived.vcv,
                  covariate.values=covariate.values,singular=singular,real.vcv=real.vcv))
 
   else
-     return(list(lnl=lnl,deviance=deviance,npar=npar,npar.unadjusted=npar.unadjusted,n=n,AICc=AICc,AICc.unadjusted=AICc.unadjusted,
+     return(list(lnl=lnl,deviance=deviance,deviance.df=deviance.df,npar=npar,npar.unadjusted=npar.unadjusted,n=n,AICc=AICc,AICc.unadjusted=AICc.unadjusted,
                  beta=beta,real=real,beta.vcv=param$beta.vcv,derived=param$derived,derived.vcv=param$derived.vcv,
                  covariate.values=covariate.values,singular=singular,real.vcv=real.vcv))
 }
