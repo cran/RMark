@@ -1,29 +1,62 @@
-"compute.design.data" <-
+#' Compute design data for a specific parameter in the MARK model (internal
+#' use)
+#' 
+#' For a specific type of parameter (e.g., Phi, p, r etc), it creates a data
+#' frame containing design data for each parameter of that type in the model as
+#' structured by an all different PIM (parameter information matrix). The
+#' design data are used in constructing the design matrix for MARK with
+#' user-specified model formulae as in \code{\link{make.mark.model}}.
+#' 
+#' This function is called by \code{\link{make.design.data}} to create all of
+#' the default design data for a particular type of model and by
+#' \code{\link{add.design.data}} to add binned design data fields for a
+#' particular type of parameter. The design data created by this function
+#' include \code{group}, \code{age}, \code{time} and \code{cohort} as factors
+#' variables and continuous (non-factor) versions of all but \code{group}.  In
+#' addition, if groups have been defined for the data, then a data column is
+#' added for each factor variable used to define the groups.  Also for specific
+#' closed capture heterogeneity models (\code{model}="HetClosed", "FullHet",
+#' "HetHug", "FullHetHug") the data column \code{mixture} is added to the
+#' design data. The arguments for this function are defined for each model by
+#' the function \code{\link{setup.model}}.
+#' 
+#' @param data data list created by \code{\link{process.data}}
+#' @param begin 0 for survival type, 1 for capture type
+#' @param num number of parameters relative to number of occasions (0 or -1)
+#' @param type type of parameter structure (Triang (STriang) or Square)
+#' @param mix if TRUE this is a mixed parameter
+#' @param rows number of rows relative to number of mixtures
+#' @param pim.type type of pim structure; either all (all-different) or time
+#' @param secondary TRUE if a parameter for the secondary periods of robust
+#' design
+#' @param nstrata number of strata for multistrata
+#' @param tostrata set to TRUE for transition parameters
+#' @param strata.labels labels for strata as identified in capture history
+#' @param subtract.stratum for each stratum, the to.strata that is computed by
+#' subtraction
+#' @param common.zero if TRUE, uses a common begin.time to set origin (0) for
+#' Time variable defaults to FALSE for legacy reasons but should be set to TRUE
+#' for models that share formula like p and c with the Time model
+#' @param sub.stratum the number of strata to subtract for parameters that use 
+#' mlogit across strata like pi and Omega for RDMSOpenMisClass
+#' @return design.data: a data frame containing all of the design data fields
+#' for a particular type of parameter \item{group}{group factor level}
+#' \item{age}{age factor level} \item{time}{time factor level}
+#' \item{cohort}{cohort factor level} \item{Age}{age as a continuous variable}
+#' \item{Time}{time as a continuous variable} \item{Cohort}{cohort as a
+#' continuous variable} \item{mixture}{mixture factor level} \item{other
+#' fields}{any factor variables used to define groups}
+#' @author Jeff Laake
+#' @seealso \code{\link{make.design.data}}, \code{\link{add.design.data}}
+#' @keywords utility
+compute.design.data <-
 function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
            secondary,nstrata=1,tostrata=FALSE,strata.labels=NULL,
-           subtract.stratum=strata.labels,common.zero=FALSE)
+           subtract.stratum=strata.labels,common.zero=FALSE,sub.stratum=0)
 {
 # -------------------------------------------------------------------------------------------------------------
 #
 # compute.design.data -  creates a design dataframe that is used to construct the design matrix 
-#
-# Arguments:
-#
-#  data             - data list created by process.data
-#  begin            - 0 for survival type, 1 for capture type
-#  num              - number of parameters relative to number of occasions (0 or -1)
-#  type             - type of parameter structure (Triang or Square)
-#  mix              - if TRUE this is a mixed parameter
-#  rows             - number of rows relative to # of mixtures
-#  secondary        - TRUE if a parameter for the secondary periods of robust design
-#  pim.type         - type of pim structure; either all different or time
-#  nstrata          - number of strata for multistrata
-#  tostrata         - set to TRUE for Psi parameters
-#  strata.labels    - labels for strata as identified in capture history
-#  subtract.stratum - for each stratum, the to.strata that is computed by subtraction
-#  common.zero      - if TRUE, uses a common begin.time to set origin (0) for Time variable
-#                      defaults to FALSE for legacy reasons but should be set to TRUE
-#                      for models that share formula like p and c with the Time model
 #
 # Value:
 #
@@ -58,15 +91,19 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
   #
   #  pim.type field allows either all-different or time pims for Triangular pims
   #
+	 if(is.null(mix) || !mix)
+		num.rows=1
+	 else
+		num.rows=data$mixtures+rows 
      if(pim.type=="all")
      {
         num.lines=num
-        num.rows=1
+#        num.rows=1
      }
      else
      {
         num.lines=1
-        num.rows=1
+#        num.rows=1
      }
   }
   if(setup.model(data$model,data$nocc)$robust)
@@ -76,12 +113,23 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
   number.of.groups=dim(data$freq)[2]
   design.data=NULL
   nsubtract.stratum=match(subtract.stratum,strata.labels)
+  all.tostrata=FALSE
+  if(sub.stratum==-1)
+  {
+	  all.tostrata=TRUE
+	  sub.stratum=0
+  }
   for(j in 1:number.of.groups)
-  for (jj in 1:nstrata)
+  for (jj in 1:(nstrata-sub.stratum))
   for(l in 1:num.sessions)
   {
       if(tostrata)
-         other.strata= sequence(nstrata)[sequence(nstrata)!=nsubtract.stratum[jj]]
+	  {
+		 if(!all.tostrata)
+             other.strata= sequence(nstrata)[sequence(nstrata)!=nsubtract.stratum[jj]]
+	     else
+			 other.strata= 1:nstrata		 
+	  }		 
       else
          other.strata=1
   for(to.strata in other.strata)
@@ -93,16 +141,19 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
        else
        {
           ncol=data$nocc.secondary[l]+num
-          if(type=="Triang")num.lines=ncol
+          if(type%in%c("Triang","STriang"))num.lines=ncol
        }
      }
      else
         ncol=num
-     for(i in 1:num.lines)
-     for(k in 1:num.rows)
-     {    
+	 ncol.save=ncol
+	 for(k in 1:num.rows)
+	 {
+	    ncol=ncol.save
+  	    for(i in 1:num.lines)
+        {    
 #
-#     Define age variable
+#        Define age variable
 #
         if(secondary)
            ages=0
@@ -115,7 +166,7 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
 #     Define cohort variable
 #
         if(secondary)
-           if(type!="Triang")
+           if(!type%in%c("Triang","STriang"))
               cohort=0
            else
               cohort=i
@@ -133,15 +184,15 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
 #
 #     Define time variable
 #
-       if(secondary)
+        if(secondary)
           if(is.na(num))
              times=0
           else
-             if(type=="Triang")
+             if(type%in%c("Triang","STriang"))
                 times=(begin+i):(data$nocc.secondary[l]+num)
              else
                 times=(begin+1):(begin+ncol)
-       else
+        else
           if(begin==0)
              if(i==num)
                 times=cohort
@@ -152,8 +203,8 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
 #
 #      Create design data as needed for the parameter
 #
-       if(type=="Triang")
-       {
+        if(type%in%c("Triang","STriang"))
+        {
           if(pim.type=="all")
           {
              add.design.data=cbind(rep(j,ncol),rep(cohort,ncol),ages,times,(i-1)+1:ncol,rep(i,ncol))
@@ -170,18 +221,18 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
                 add.design.data=matrix(rep(j,ncol),nrow=1)
                 dd.names=c("group")
             }
-       }
-       else
-       {
+        }
+        else
+        {
           add.design.data=cbind(rep(j,ncol),ages,times)
           dd.names=c("group","age","time")
-       }
-       if(!is.null(mix) && mix)
-       {
+        }
+        if(!is.null(mix) && mix)
+        {
           add.design.data=cbind(add.design.data,rep(k,ncol))
           dd.names=c(dd.names,"mixture")
-       }
-       if(nstrata>1)
+        }
+        if(nstrata>1)
            if(tostrata)
            {
               add.design.data=cbind(add.design.data,rep(jj,ncol),rep(to.strata,ncol))
@@ -192,21 +243,22 @@ function(data,begin,num,type="Triang",mix=FALSE,rows=0,pim.type="all",
               add.design.data=cbind(add.design.data,rep(jj,ncol))
               dd.names=c(dd.names,"stratum")
            }
-      if(secondary)
-      {
+        if(secondary)
+        {
           add.design.data=cbind(add.design.data,rep(l,ncol))
           dd.names=c(dd.names,"session")
-      }
+        }
 #
 #     Add rows to existing design data
 #
-      design.data=rbind(design.data,add.design.data)
+        design.data=rbind(design.data,add.design.data)
 #
-#     If trianular pim type, decrement number of cols
+#      If trianular pim type, decrement number of cols
 #
-       if(type=="Triang")
+       if(type%in%c("Triang","STriang"))
           ncol=ncol-1
-     }
+       }
+	 }
   }
   }
    design.data=as.data.frame(design.data,row.names=NULL)

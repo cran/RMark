@@ -1,4 +1,17 @@
-"valid.parameters" <-
+#' Determine validity of parameters for a model (internal use)
+#' 
+#' Checks to make sure specified parameters are valid for a particular type of
+#' model.
+#' 
+#' 
+#' @param model type of c-r model ("CJS", "Burnham" etc)
+#' @param parameters vector of parameter names (for example "Phi" or "p" or
+#' "S")
+#' @return Logical; TRUE if all parameters are acceptable and FALSE otherwise
+#' @author Jeff Laake
+#' @seealso \code{\link{setup.parameters}}, \code{\link{setup.model}}
+#' @keywords utility
+valid.parameters <-
 function(model,parameters)
 # ------------------------------------------------------------------------------------------------
 # valid.parameters  - checks to make sure specified parameter is valid for a particular model
