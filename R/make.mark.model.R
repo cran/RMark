@@ -1271,16 +1271,22 @@ create.agenest.var=function(data,init.agevar,time.intervals)
           for(to.stratum in other.strata)
           {
                if(model.list$robust && parameters[[i]]$secondary)
-                  num.sessions=nocc
+			   {
+				   multi.session=TRUE
+                   num.sessions=nocc
+			   }
                else
-                  num.sessions=1
+			   {
+				   num.sessions=1
+				   multi.session=FALSE
+			   }
                for (l in 1:num.sessions)
                {
                   k=k+1
                   pim[[i]][[k]]=list()
-                  if(num.sessions==1)
-                     pim[[i]][[k]]$pim=create.pim(nocc,parameters[[i]],npar,mixtures)
-                  else
+				  if(!multi.session)
+						  pim[[i]][[k]]$pim=create.pim(nocc,parameters[[i]],npar,mixtures)
+				  else
                   {
                      if(is.na(parameters[[i]]$num))
                      {
@@ -1714,23 +1720,12 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 					 nsets=length(pim[[parx]])
 					 for (kk in 1:nsets)
 					 {
-						 logit.numbers=max.logit.number+rep(1:nrow(full.ddl[[parx]])/(nstrata-1),nstrata-1)
+						 logit.numbers=max.logit.number+rep(1:(nrow(full.ddl[[parx]])/(number.of.groups*(nstrata-1))),nstrata-1)
 						 max.logit.number=max(logit.numbers)
 						 string=c(string,paste("mlogit(",logit.numbers,")",sep=""))
-					 }
-					 
-					 
+					 }			 				 
 				 } else
-				 {
-					 if(parx=="Omega")
-					 {
-
-						 
-					 }else
-					 {
-                         stop(paste("Mlogit link not allowed with parameter",parx))
-                     }
-				 }
+                     stop(paste("Mlogit link not allowed with parameter",parx))
 			 }
            }
         } else
