@@ -98,6 +98,24 @@
 #' }
 #' mstrata.results=run.mstrata()
 #' 
+#' data(mallard)
+#'Dot=mark(mallard,nocc=90,model="Nest",
+#'		model.parameters=list(S=list(formula=~1)))
+#'mallard.proc=process.data(mallard,nocc=90,model="Nest")
+#'export.MARK(mallard.proc,"mallard",Dot)
+#'data(robust)
+#'time.intervals=c(0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0)
+#'S.time=list(formula=~time)
+#'p.time.session=list(formula=~-1+session:time,share=TRUE)
+#'GammaDoublePrime.random=list(formula=~time,share=TRUE)
+#'model.1=mark(data = robust, model = "Robust",
+#'		time.intervals=time.intervals,
+#'		model.parameters=list(S=S.time,
+#'				GammaDoublePrime=GammaDoublePrime.random,p=p.time.session))
+#'robust.proc=process.data(data = robust, model = "Robust",
+#'		time.intervals=time.intervals)
+#'export.MARK(robust.proc,"robust",	model.1)
+#'
 export.MARK=function(x,project.name,model=NULL,replace=FALSE,chat=1.0,title="",ind.covariates="all")
 {
 # exports model and data files for import into the MARK interface
@@ -134,9 +152,16 @@ export.MARK=function(x,project.name,model=NULL,replace=FALSE,chat=1.0,title="",i
 	 x$time.intervals=rep(1,length(x$time.intervals))
 	 x$nocc=nchar(x$data$ch[1])
   }
-  write(setup.model(x$model, nchar(x$data$ch[1]), x$mixtures)$etype,file=filename)
+  if(x$model=="Nest") 
+	  nocc=1
+  else
+	  nocc=nchar(x$data$ch[1])
+  write(setup.model(x$model, nocc, x$mixtures)$etype,file=filename)
   write(x$mixtures,file=filename,append=TRUE)
-  write(x$nocc,file=filename,append=TRUE)
+  if(setup.model(x$model, nocc, x$mixtures)$robust)
+     write(nocc,file=filename,append=TRUE)
+  else
+	  write(x$nocc,file=filename,append=TRUE)
   if(is.null(ind.covariates))
   {
     write("0",file=filename,append=TRUE)  
