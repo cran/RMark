@@ -1,7 +1,7 @@
-f7f48489a97db3817e796a56914b66fb *DESCRIPTION
+93d1131075d906f94c7a8a33e1830214 *DESCRIPTION
 494fedef8695f5b6d9c022f3d9c751a8 *NAMESPACE
 2e390ae838ee47463b3b0cc62addfce5 *R/PIMS.R
-8b8ecba256fa00401896bf167fe5de7c *R/RMark-package.R
+b57049195d385d9708ac8054d8719054 *R/RMark-package.R
 7b7b838484ede8ceb67e9223a5b9c216 *R/TransitionMatrix.R
 8fc655dd2a05dd863c101c6d40eb9304 *R/add.design.data.R
 8802f878e5dd1a8f4f2ffdf5bef0a1c7 *R/adjust.chat.R
@@ -30,9 +30,9 @@ d01792c86f98a1d225047b3442eb66ef *R/get.link.R
 ac6caa7a5b697ccf3a9085f8c82dab80 *R/import.chdata.R
 4a2e7e00937651d36d87c6eb4e77324f *R/inverse.link.R
 21b1754c31ea5137cc9483f9e1638aea *R/make.design.data.R
-f7d4d76c47759e71f2b0dd6caf467ca3 *R/make.mark.model.R
+1b5ff8f1f49f7f778dbe7b6652ae03a1 *R/make.mark.model.R
 2baec4f3f6d65945e7de0f1c2bdd9791 *R/make.time.factor.r
-96369b868eadb89fea358981fe312eda *R/mark.R
+06183be3448082076377896dee4dad48 *R/mark.R
 650999e138921fe9c004e38959ae9fad *R/mark.wrapper.R
 4aad35a7d3de391b3e73af6e60d9e8ae *R/mark.wrapper.parallel.r
 fb5571c2fc77e57ff899cb51d39b8986 *R/merge.design.covariates.r
@@ -45,13 +45,13 @@ a487b1d4daa77d5c6d0d3dcdafb87ee5 *R/model.table.R
 93db19d243837882b57fc7fbca8a3072 *R/popan.r
 7a7476c3fa77c4057760ce25334edc08 *R/print.mark.R
 0ad1438aff5f76e4337c2aab5e11d7a4 *R/print.summary.mark.R
-118eb4dfb835287bee09d3a1eaa77d5b *R/process.data.R
+1a1170525bc0893eac545d934b6f793a *R/process.data.R
 279043f7ed23620cc7f0a51e267c35e0 *R/read.mark.binary.R
 1a91974cdf822b103629dfe6abe16369 *R/read.mark.binary.linux.R
 72c264d2d012baca49e4f80a9f0570da *R/release.gof.R
 2da676c4d0ccde10238dc56b6bedfc0b *R/remove.mark.r
 3dd22563571a69ae4774da8be4cdee2b *R/rerun.mark.R
-f9a2d474b0379674a38f107062ad819a *R/run.mark.model.R
+2ab11a10e3f8e59cb60a084c2ae00f35 *R/run.mark.model.R
 87d9af2c39eec949af07957c54349064 *R/run.models.R
 842f20b7c6a32b95a2037b9060dbc0a4 *R/setup.model.R
 a37618b605d8a1ffb90bf8580ced9a93 *R/setup.parameters.R
@@ -161,7 +161,7 @@ a9d791ef294651cce2e46e8f966af152 *man/NicholsMSOccupancy.Rd
 31f48a2919914fc0400c1b062aeee88d *man/RDOccupancy.Rd
 170bf8b342d1d27b1b008038c75ce74c *man/RDSalamander.Rd
 161de9097aee0dc6d95c024e1aac4e21 *man/TransitionMatrix.Rd
-26ea01273743e87f3beb9607aaedfa03 *man/Whatsnew.Rd
+b0cef956ec1d0c281c71338e8658ae45 *man/Whatsnew.Rd
 cbaddfdf02ae198a5af3f690a3a6a6f5 *man/add.design.data.Rd
 ccc8af87ba59131e7e3fffe3a42c6789 *man/adjust.parameter.count.Rd
 6fdba9e6eb7ffb0a75e5243f08a1f57e *man/adjust.value.Rd
@@ -199,7 +199,7 @@ a9e5ecf04e817c9fbbd8e108950ad5e7 *man/inverse.link.Rd
 9b5cd7417ee3f40092658364bdf49429 *man/make.mark.model.Rd
 64c60e8896107ddb0fa1b1ffeaeb449c *man/make.time.factor.Rd
 ae1fa2f88c1156c41407a20024583cc9 *man/mallard.Rd
-873b6724c94ab51a13f26aac3c88de51 *man/mark.Rd
+50e82df4187b0afb182e0812aedbe560 *man/mark.Rd
 3207f5f2f3aeb87a167953a91fc0acc5 *man/mark.wrapper.Rd
 5d17a93d4bdffac9e31b1a6fd6c302fd *man/mark.wrapper.parallel.Rd
 6d8832b220075e0768e05e685ece321c *man/merge.mark.Rd
