@@ -478,11 +478,27 @@ NULL
 #' }
 #' 
 #' dipper.popan.results=run.dipper.popan()
-#' 
-#' 
+#'
+#'# *****************************************************************
+#'# Here is an example of user specified links for each real parameter
+#'  data(dipper)
+#'  dipper.proc=process.data(dipper)
+#'  dipper.ddl=make.design.data(dipper.proc)
+#'# dummy run of make.mark.model to get links and design data. 
+#'# parm.specific set to TRUE so it will create a link for 
+#'# each parameter because for this model they are all the
+#'# same (logit) and if this was not specified you'ld get a vector with one element
+#'  dummy=make.mark.model(dipper.proc,dipper.ddl,simplify=FALSE,parm.specific=TRUE)
+#'  input.links=dummy$links
+#'# get model indices for p where time=4
+#'  log.indices=dipper.ddl$p$model.index[dipper.ddl$p$time==4]
+#'# assign those links to log
+#'  input.links[log.indices]="Log"
+#'# Now these can be used with any call to mark
+#'  mymodel=mark(dipper.proc,dipper.ddl,input.links=input.links)
+#'  summary(mymodel)
+#'
 NULL
-
-
 
 
 
@@ -628,10 +644,6 @@ NULL
 #' #  time varying p=c
 #' ee.closed.mt=mark(edwards.eberhardt,model="Closed",
 #'                    model.parameters=list(p=ptimeshared))
-#' #  time varying p + additive c (that is recapture prob is additive 
-#' #  difference from cap prob at same time)
-#' ee.closed.mtc=mark(edwards.eberhardt,model="Closed",
-#'                    model.parameters=list(p=ptime.c))
 #' #
 #' #  Closed heterogeneity models
 #' #
@@ -2012,21 +2024,10 @@ NULL
 
 #' Summary of changes by version
 #' 
-#' A good place to look for new changes.  Often I'll add changes here but don't
+#' A good place to look for changes.  Often I'll add changes here but don't
 #' always get to it in the documentation for awhile.  They are ordered from
 #' newest to oldest.
 #' 
-#' Version 2.1.0 (27 Jan 2012) \itemize{ \item Patch was made to \code{\link{run.mark.model}} so that
-#' a filename can be specified to pick up orphaned MARK output files for a model that was run but not saved. This used
-#' to work but when I added code to allow user-specified prefixes (ie something other than marknnn) the change I made broke
-#' the other feature.  Thanks to Kelly Hastings for bringing this to my attention.
-#' \item Patch was made to  \code{\link{make.mark.model}}to allow design data to be deleted on shared parameters. Thanks to 
-#' Claudia Penaloza for reporting this issue.
-#' \item In \code{\link{process.data}} the restriction of having only one non-unobservable state for robust designs was
-#'  removed but a note is still issued when this occurs. Also, a warning is issued if you specify more than one value in the vector for 
-#'  initial.ages but an age variable is not identified in the groups. Also, allowed "." in Royle count occupancy models.
-#' \item An argument run was added to \code{\link{mark}} which if set to FALSE will not run the model after it is created. 
-#' }
 #' Version 2.0.9 (1 Dec 2011) \itemize{ \item Patch was made to  \code{\link{make.mark.model}} to fix bug in
 #' PIM creation for a multi-session model and there was just 1 session. Thanks to Erin Roche for helping to 
 #' identify this bug.
@@ -2035,7 +2036,7 @@ NULL
 #' with the RDMSMisClass and other new models that were recently added.
 #' \item Additional changes were made to \code{\link{export.MARK}} to re-fix changes for robust and nest survival
 #' model export to MARK.
-#' \item A function \code{\link{mark.wrapper.parallel}} written by Eldar Rakimberdiev provides a parallel processing
+#' \item A function \code{\link{mark.wrapper.parallel}} written by Eldar Rakhimberdiev provides a parallel processing
 #' version of mark.wrapper.  See the example in the help for the function.  The parallel version is functionally the same
 #' and can be used in place of \code{mark.wrapper} to run sequentially or in parallel. It does not include the run argument
 #' however.
