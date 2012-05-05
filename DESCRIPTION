@@ -1,9 +1,9 @@
 Package: RMark
-Version: 2.1.0
-Date: 2012-01-27
+Version: 2.1.1
+Date: 2012-05-03
 Title: R Code for MARK Analysis
 Author: Jeff Laake <jeff.laake@noaa.gov> with contributions from Eldar
-        Rakimberdiev, Bret Collier, Jay Rotella and Andrew Paul
+        Rakhimberdiev, Bret Collier, Jay Rotella and Andrew Paul
 Description: This package provides an interface to the software package
         MARK developed by Gary White. MARK is freely available at
         (http://www.phidot.org/software/mark/download/) but is not open
@@ -37,6 +37,6 @@ Collate: 'add.design.data.R' 'adjust.chat.R' 'adjust.parameter.count.R'
         'summary.mark.R' 'TransitionMatrix.R' 'utility.r'
         'valid.parameters.R' 'var.components.R' 'var.components.reml.r'
         'zzz.R' 'RMark-package.R'
-Packaged: 2012-01-27 17:13:28 UTC; JLaake
+Packaged: 2012-05-04 15:13:43 UTC; JLaake
 Repository: CRAN
-Date/Publication: 2012-01-28 10:46:12
+Date/Publication: 2012-05-05 11:29:36

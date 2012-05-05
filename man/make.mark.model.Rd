@@ -5,7 +5,9 @@
   make.mark.model(data, ddl, parameters = list(),
     title = "", model.name = NULL, initial = NULL,
     call = NULL, default.fixed = TRUE, options = NULL,
-    profile.int = FALSE, chat = NULL)
+    profile.int = FALSE, chat = NULL, simplify = TRUE,
+    input.links = NULL, parm.specific = FALSE,
+    mlogit0 = FALSE)
 }
 \arguments{
   \item{data}{Data list resulting from function
@@ -41,6 +43,19 @@
 
   \item{chat}{pre-specified value for chat used by MARK in
   calculations of model output}
+
+  \item{simplify}{if FALSE, does not simplify PIM
+  structure}
+
+  \item{input.links}{specifies set of link functions for
+  parameters with non-simplified structure}
+
+  \item{parm.specific}{if TRUE, forces a link to be
+  specified for each parameter}
+
+  \item{mlogit0}{if TRUE, any real parameter that is fixed
+  to 0 and has an mlogit link will have its link changed to
+  logit so it can be simplified}
 }
 \value{
   model: a MARK object except for the elements
