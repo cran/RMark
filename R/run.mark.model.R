@@ -58,7 +58,7 @@
 #' \code{\link{mark}}, \code{\link{cleanup}}
 #' @keywords model
 #' @examples
-#' 
+#' \donttest{
 #' data(dipper)
 #' for(sex in unique(dipper$sex))
 #' {
@@ -76,7 +76,7 @@
 #' rm(Male.results,Female.results,x.results)
 #' cleanup(ask=FALSE,prefix="Male")
 #' cleanup(ask=FALSE,prefix="Female")
-#' 
+#' }
 run.mark.model <-
 function(model,invisible=FALSE,adjust=TRUE,filename=NULL,prefix="mark",realvcv=FALSE,
 delete=FALSE,external=FALSE)
@@ -156,39 +156,34 @@ delete=FALSE,external=FALSE)
 # Write input file to temp file 
 #
   writeLines(model$input,inputfile)
+# Windows operating system
   if(os=="mingw32")
   {
-    if(!exists("MarkPath"))
-	{
-		MarkPath=Sys.which("mark.exe")
-	    if(MarkPath=="")
-			if(file.exists("c:/Program Files/Mark/mark.exe"))
-			  MarkPath=shQuote("c:/Program Files/Mark/mark.exe")
-            else
-			  if(file.exists("c:/Program Files (x86)/Mark/mark.exe"))
-				  MarkPath=shQuote("c:/Program Files (x86)/Mark/mark.exe")
-		      else	
-			      stop("mark.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Program Files (x86)/Mark'")
-    }else
-	{
-		if(substr(MarkPath,nchar(MarkPath),nchar(MarkPath))%in%c("\\","/"))
-			MarkPath=shQuote(paste(MarkPath,"mark.exe",sep=""))
-		else
-			MarkPath=shQuote(paste(MarkPath,"mark.exe",sep="/"))
-	}		
-    if(RunMark)
-		system(paste(MarkPath, " BATCH i=",inputfile," o=", outfile,
-						" v=",vcvfile, " r=",resfile,sep = ""), invisible = invisible)
-#	else
-#      file.rename(vcvfile,"markxxx.vcv")
+  	 markpath=create_markpath()
+	 if(is.null(markpath)) stop("mark.exe, mark32.exe or mark64.exe cannot be found. Add to system path or specify MarkPath object (e.g., MarkPath='C:/Programme/Mark'")
+	 if(RunMark)
+		 if(.Platform$GUI[1]=="RTerm")
+		 {
+			 if(invisible)
+				 system(paste(markpath, " i=",inputfile," o=", outfile,
+								 " v=",vcvfile, " r=",resfile,sep = ""),ignore.stdout=TRUE,ignore.stderr=TRUE)
+			 else
+				 system(paste(markpath, " i=",inputfile," o=", outfile,
+								 " v=",vcvfile, " r=",resfile,sep = ""))
+			 
+		 }else
+		 {
+			 system(paste(markpath, " i=",inputfile," o=", outfile,
+								 " v=",vcvfile, " r=",resfile,sep = ""),invisible=TRUE)
+			 if(file.exists("fort.0"))unlink("fort.0")
+		 }
   } else
+# Non Windows operating systems
   {
     if(!exists("MarkPath"))MarkPath=""
     if(RunMark)
        system(paste("mark i=",inputfile," o=", outfile,
             " v=", vcvfile," r=",resfile,sep = ""))
-#    else
-#      file.rename(vcvfile,"markxxx.vcv")
   }
 #
 # Read in the output file
@@ -235,3 +230,5 @@ delete=FALSE,external=FALSE)
    } else
      return(model)
 }
+
+

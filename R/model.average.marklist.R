@@ -59,7 +59,7 @@
 #' edition. Springer, New York.
 #' @keywords utility
 #' @examples
-#' 
+#' \donttest{
 #' data(dipper)
 #' run.dipper=function()
 #' {
@@ -146,7 +146,7 @@
 #' # a single model with find.covariates/fill.covariates.
 #' # get model averaged estimates of first Phi(1) and first p(43) and v-c matrix
 #' model.average(dipper.results,vcv=TRUE,indices=c(1,43))  
-#' 
+#' }
 #' 
 model.average.marklist<- function(x,parameter=NULL,data=NULL,vcv=FALSE,drop=TRUE,indices=NULL,revised=TRUE,...)
 {
@@ -235,7 +235,7 @@ if(drop)
       }
       model.indices=unique(model$simplify$pim.translation[indices])
       used.beta=which(apply(model$design.matrix[model.indices,,drop=FALSE],2,function(x)!all(x=="0")))
-      if(any(diag(model$results$beta.vcv[used.beta,used.beta])<0))
+      if(any(diag(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])<0))
 #      if(any(diag(model$results$beta.vcv)<0))
       {
          dropped.models=c(dropped.models,i)
