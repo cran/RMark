@@ -42,7 +42,7 @@
 #' @export
 #' @seealso \code{\link{collect.model.names}}, \code{\link{collect.models}}
 #' @examples
-#' 
+#' \donttest{
 #' data(dipper)
 #' run.dipper=function()
 #' {
@@ -104,7 +104,7 @@
 #' # (to do that directly use RODBC or xlsreadwrite package for R)
 #' #
 #' write.table(model.DeltaAICc.matrix,"DipperDeltaAICc.txt",sep="\t")
-#' 
+#' }
 model.table <-
 function(model.list=NULL,type=NULL,sort=TRUE,adjust=TRUE,ignore=TRUE,pf=1,
               use.lnl=FALSE,use.AIC=FALSE,model.name=TRUE)
@@ -168,7 +168,8 @@ else
 #
 result.table=list()
 model.numbers=NULL
-chat.values=rep(1,length(model.list))
+#chat.values=rep(1,length(model.list))
+chat.values=NULL
 for(i in 1:length(model.list))
 {
     if (!amodeltable)
@@ -189,10 +190,8 @@ for(i in 1:length(model.list))
    if(is.null(model$chat))
       chat=1
    else
-   {
       chat=model$chat
-      chat.values[i]=chat
-   }
+   chat.values=c(chat.values,chat)
 #
 #  If this is the first model, save the type and the effective sample size
 #

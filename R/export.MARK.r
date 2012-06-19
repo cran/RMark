@@ -36,7 +36,7 @@
 #' @seealso \code{\link{export.chdata}}, \code{\link{export.model}}
 #' @keywords utility
 #' @examples
-#' 
+#' \donttest{
 #' data(mstrata)
 #' run.mstrata=function()
 #' {
@@ -102,7 +102,7 @@
 #'Dot=mark(mallard,nocc=90,model="Nest",
 #'		model.parameters=list(S=list(formula=~1)))
 #'mallard.proc=process.data(mallard,nocc=90,model="Nest")
-#'export.MARK(mallard.proc,"mallard",Dot)
+#'export.MARK(mallard.proc,"mallard",Dot,replace=TRUE)
 #'data(robust)
 #'time.intervals=c(0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0)
 #'S.time=list(formula=~time)
@@ -114,8 +114,8 @@
 #'				GammaDoublePrime=GammaDoublePrime.random,p=p.time.session))
 #'robust.proc=process.data(data = robust, model = "Robust",
 #'		time.intervals=time.intervals)
-#'export.MARK(robust.proc,"robust",	model.1)
-#'
+#'export.MARK(robust.proc,"robust",	model.1,replace=TRUE)
+#'}
 export.MARK=function(x,project.name,model=NULL,replace=FALSE,chat=1.0,title="",ind.covariates="all")
 {
 # exports model and data files for import into the MARK interface
