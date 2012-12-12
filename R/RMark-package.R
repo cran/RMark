@@ -83,6 +83,115 @@
 #' 
 NULL
 
+#' White-tailed deer double observer spotlight capture-recapture analysis
+#' 
+#' This data represents a set of independent double observer road-transect survey data of white-tailed deer
+#' on Brosnan Forest, South Carolina surveyed in August, 2005-2009.  The primary reason for
+#' this package is to provide a completely reproducible example of the analysis from Collier et al. (2012).  We used a
+#' Huggins closed capture model implemented in MARK \url{http://www.phidot.org/software/mark/} via RMark \url{http://cran.r-project.org/web/packages/RMark/index.html} 
+#' both of which will need to be installed on the system to use this package.  The data have 2 time periods (primary observer (t1) was a thermal imager, secondary observer (t2) was
+#' a spotlight observer in the same vehicle on the same side) with the primary objective of the study being to evaluate 
+#' the detection (recapture) rates of white-tailed deer using spotlights as a survey method. 
+#'
+#' @details  In addition to detailing the analysis used by Collier et al. (2012), this example documents the 
+#' use of the \code{share} argument in the RMark parameter specification because there is presently very little
+#' documentation on the use of \code{share}. Parameters in MARK models rarely share columns of the design matrix. For
+#' example while you might want to use the same covariate for survival and capture probability, you would never use the
+#' same beta (same column of the design matrix) for each parameter.  However, there are exceptions when the parameters 
+#' represent similar quantities and that is when the \code{share} argument is useful.  For example, in the closed capture models
+#' p is initial capture probability and c is recapture probability. In this case, it would make perfect sense to use the same
+#' column of the design matrix for both parameters. The most obvious case is to fit a model in which p=c.
+#'
+#' In RMark, certain pairs of parameters have been identified as similar and shareable.  These can be found in the file parameters.txt
+#' which is in the RMark directory in your R library. With each pair that is shareable, the first one listed is the primary parameter.
+#' When you want to share columns in the design matrix, share=TRUE is added to the specification of the primary parameter. A parameter
+#' specification is not given for the other secondary parameter when they are shared.  When RMark, sees that the parameters are to be shared it
+#' creates a pooled set of design data and adds a column with the name of the secondary parameter and its value is 0 for the rows
+#' for the primary parameter and 1 for the rows for the secondary parameter. For example, with the closed capture model if share=TRUE is
+#' added to the parameter specification for p, a model is not specified for c, and the pooled design data set contains a field called c.
+#' The added field allows construction of models where there are restricted differences between the parameters. For example, p=list(formula=~time+c,share=TRUE)
+#' will fit a model in which capture probability varies by time and recapture probability includes an additive difference on the link scale.
+#' Because the design data are pooled when you share parameters, if you modify design data for one of the parameters, the other most be modified as
+#' as well, so the columns of the design data for both parameters are the same or RMark will give an error.
+#' 
+#' The argument \code{share} is used in all the candidate models in the below example analysis.  As a simplified example of how 
+#' \code{share} works, look at the candidate models in the \code{bfrun{}} function call named \code{mod.2} and \code{mod.2a} (note that
+#' \code{mod.2a} was not included in the supplemental file available from the Journal of Wildlife Management and is only included in this package).  Both
+#' of these models are conducting the exact same analysis, with the first \code{mod.2}, we used the formula \code{~time}  (if you don't 
+#' know what this means go read the MARKBOOK at \url{http://www.phidot.org/software/mark/}.  Notice, however, we used the argument
+#' \code{share} in \code{mod.2}, which tells RMark to share columns of the MARK design matrix.  For comparison, so you can evaluate how 
+#' \code{share} works for yourself, \code{mod.2a} recreates the same analysis as \code{mod.2}, but uses the approach more typical to MARK 
+#' analyses where each parameter is specified independently and uniquely.
+#'
+#' @name deer
+#' @docType data
+#' @format The format is a data frame with 4508 observations on the following 7 variables.
+#' \describe{ \item{SL (spotlight)}{0/1 whether deer was missed/seen by the spotlight observer}
+#' \item{TI (thermal imager)}{0/1 whether deer was missed/seen by the thermal imager observer}
+#' \item{Group}{Factor with 79 levels representing each unique paired (TI-SL) survey conducted}
+#' \item{Year}{Factor with 5 levels for year of survey}
+#' \item{MaxCount}{Count of maximum number of deer seen for each survey, only needed
+#' for bootstrapp analysis in MARK, not used in bfdeeR package}
+#' \item{Cluster}{Value assigning each deer to a specific observation cluster, only needed
+#' for bootstrapp analysis in MARK, not used in bfdeeR package}
+#' \item{MgmtUnit}{Management unit identification} }
+#' @references Collier, B. A., S. S. Ditchkoff, J. B. Raglin, and C. R. Ruth.  2012. Spotlight surveys 
+#' for white-tailed deer: monitoring panacea or exercise in futility? Journal of Wildlife Management, In Press.  
+#' @keywords datasets
+#' @author Bret Collier
+#' @examples 
+#' 
+#' \donttest{
+#' data(deer)
+#' x=data.frame(ch=paste(deer$TI, deer$SL, sep=""), Survey=factor(deer$Group), Year=factor(deer$Year), Cluster=deer$Cluster, MgtUnit=factor(deer$MgmtUnit))
+#' x$ch=as.character(x$ch)
+#' bfrun=function(){
+#' x.proc=process.data(x, model="Huggins", groups=c("Survey", "Year", "MgtUnit"))
+#' x.ddl=make.design.data(x.proc)
+#' 
+#' #Silly Null model, constant p & c sharing 1 parameter (one detection estimate)
+#' p.shared=list(formula=~1,share=TRUE)
+#' mod.1=mark(x.proc, x.ddl, model.parameters=list(p=p.shared), invisible=FALSE)
+#'  
+#' #2 Parameter Null Model, constant p, constant c, different p and c (one estimate for each; p ne c)
+#' #p(time), c(-), share=TRUE, detection is time dependent, with recapture parameter shared
+#' p.sharetime=list(formula=~time, share=TRUE)
+#' mod.2=mark(x.proc, x.ddl, model.parameters=list(p=p.sharetime), invisible=FALSE)
+#' 
+#' #2a Parameter Null Model, constant p, constant c, different p and c (one estimate for each; p ne c) not using share
+#' mod.2a=mark(x.proc, x.ddl, model.parameters=list(p=list(formula=~1), c=list(formula=~1)))
+#' 
+#' #Fully parameterized model, different p and c for each survey transect replicate, management unit, method (TI or SL) and any observers
+#' p.survey=list(formula=~Survey*time, share=TRUE)
+#' mod.3=mark(x.proc, x.ddl, model.parameters=list(p=p.survey), invisible=FALSE)
+#' 
+#' #p(MU), c(MU), initial detection and recapture differ and are management unit dependent
+#' p.mu=list(formula=~MgtUnit*time, share=TRUE)
+#' mod.4=mark(x.proc, x.ddl, model.parameters=list(p=p.mu), invisible=FALSE)
+#' 
+#' #p(MU) detection is management unit dependent
+#' p.mu=list(formula=~MgtUnit, share=TRUE)
+#' mod.5=mark(x.proc, x.ddl, model.parameters=list(p=p.mu), invisible=FALSE)
+#' 
+#' #p(Yr + MgtUnit),  detection is year + MgtUnit
+#' p.yearMgtUnit=list(formula=~Year*time+MgtUnit, share=TRUE)
+#' mod.6=mark(x.proc, x.ddl, model.parameters=list(p=p.yearMgtUnit), invisible=FALSE)
+#' 
+#' #p(Year), initial detection and recapture are year dependent
+#' p.year=list(formula=~Year*time, share=TRUE)
+#' mod.7=mark(x.proc, x.ddl, model.parameters=list(p=p.year), invisible=FALSE)
+#' 
+#' return(collect.models())
+#' }
+#' bf.out=bfrun()
+#' bf.out
+#' 
+#' #export function to send dataset and covariates data to MARK for bootstrap analysis (not run but here for completeness)
+#' #export.MARK(x.proc, "BFdeer", mod.3, replace=TRUE, ind.covariates="all")
+#' }
+NULL
+
+
 
 
 #' Example data for Closed Robust Design Multistrata
@@ -2025,6 +2134,113 @@ NULL
 #' }
 NULL
 
+#' White-winged dove Jolly-Seber POPAN Analysis Details
+#' 
+#' This dataset represents 2 years of capture-mark-recapture data collected on uniquely identifiable leg-banded (size 4) white-winged dove
+#' captured in Alice, Texas, USA (Latitude 27.25, Longitude -98.07) between mid-February and mid-September during 2009 and 2010.  The package was developed such that others
+#' could recreate the analysis developed by Collier, B. A., S. R. Kremer, C. D. Mason, J. Stone, K. W. Calhoun, and M. J. Peterson.  2012. Immigration and 
+#' recruitment in an urban white-winged dove breeding colony.  Journal of Fish and Wildlife Management, In review., and see how the data and results 
+#' were used to estimate population level recruitment (number juveniles in population over number adults in population).
+#' 
+#' @details White-winged doves were captured (aged:  AHY=after-hatch year, HY=hatch year) continuously in baited walk-in dove traps beginning in Februrary and ending in September in each year (2009 and 2010).  
+#' During 2009 5,101 white-winged doves were captured (2,894 AHY, 2,207 HY) while in 2010 3,502 white-winged doves were captured (3,106 AHY, 486 HY). We used approximately 2 week
+#' date windows to categorized our encounter histories for analysis in MARK \url{http://www.phidot.org/software/mark/} via RMark \url{http://cran.r-project.org/web/packages/RMark/index.html} 
+#' using these dates:  27 Feb; 13 March; 27 March; 10 April; 24 April; 8 May; 22 May; 5 June; 19 June;	3 July;	17 July; 31 July; 14 August-End; giving us 13 encounter occasions.
+#' 
+#' I wanted to force b0=0 for the first time frame, as none could be there when we started as they had not arrived yet in any real number.  
+#' If you take the first column out, the numbers get ridiculously screwy for the super population size and the entry parameters, 
+#' because the initial population has individuals in it, thus the JSPOPAN estimates something like 40% of the birds were already in 
+#' the population pre-trapping, which is biologically impossible.
+#' 
+#' Initially, because of the parameter structure in a JS-POPAN model and the fact that the initial entry probability is 1 minus the sum of the resultant entry probabilities 
+#' for subsequent sampling occasions, and because occasionally a couple of doves were captured during the initial time frame, we were getting entry values for the initial time period
+#' representing >40% of the total doves captured. This was not plausible because these doves migrate in from Mexico/S. America and very few birds have arrived prior to trapping.  
+#' To obtain reasonable results a 'fake' encounter occasion (time -1) with no captures ("0") was appended to beginning of each capture history to force b0=0.
+#' As such, the data for \code{wwdo.09} and \code{wwdo.10} will have 14, not 13 encounter histories.
+#' 
+#' Important to note, in case you don't read Collier et al. (2012), is the fact that the 2010 dataset is kind of screwy relative to the estimation of the entry parameters for HY wwdo.  Basically,
+#' what happened was we caught a bunch of AHY birds, but when we captured HY birds, we only caught a few (~400 in 2010) and of those we captured, we rarely, if ever had any recaptures.  Without getting
+#' into a bunch of speculation on what happened, as we don't really know, we suspect it had something to do with the fact that 2009 was a extreme drought in Texas, as to where 2010 was extremely wet, 
+#' so mast based food sources (mulberry tree's are everywhere) and such were readily available in the urban environment, as such, lower trapping success.  So, when you fit the 2010 dataset using the
+#' same candidate model set at the 2009, you get pretty nonsensical answers for the entry \code{b} parameters.  As such, we did not use a group specific entry model for 2010.  If you want more 
+#' detail, see Collier et al. (2012).
+#' 
+#' Within the model code below, you can see that we fixed the both the \code{Phi} and \code{p} parameters for those periods in the analysis when HY birds could not be
+#' in the population (e.g., when all birds migrated into the breeding colony and no HY birds had been produced yet).  There is probably a little slack in the range, as 
+#' it is possible that there were some HY white-winged doves in the population in the last period we fixed, but we did not catch any there so we opted to fix it as well. 
+#' 
+#' Note that the R function \code{wwdo.popan} is set up in RMark speak, and will run either the \code{wwdo.09} or \code{wwdo.10} datasets as long as you specify one
+#' in the lines where I have listed \code{data(wwdo.09)} and \code{wwdo=wwdo.09}.  If you want to see the 2010 analysis, just change those lines to \code{wwdo.10}.
+#' 
+#' @name wwdo.popan
+#' @aliases wwdo.09 wwdo.10
+#' @docType data
+#' @format The format is 2 data frames, one for 2009 and one for 2010. 2009 has 5101 unique captures, 2010 has 3502 unique captures.
+#' \describe{ \item{Prefix}{Unique band prefix identifier (usually 0914 or 0984)}
+#' \item{Suffix}{Unique band suffix (numeric value)}
+#' \item{E0-E13}{0/1 representing whether a dove was captured (1) or not captured (0) during that (E) sampling occasion}
+#' \item{Age}{Age class with AHY=after-hatch year and HY=hatch year} }
+#' @references Collier, B. A., S. R. Kremer, C. D. Mason, J. Stone, K. W. Calhoun, and M. J. Peterson.  2012. Immigration and 
+#' recruitment in an urban white-winged dove breeding colony.  Journal of Fish and Wildlife Management, In review. 
+#' @keywords datasets
+#' @examples
+#' 
+#' \donttest{
+#' data(wwdo.09)
+#' wwdo=wwdo.09
+#' wwdo.popan=function(){
+#' wwdo.proc=process.data(wwdo, model="POPAN", groups="Age")
+#' wwdo.ddl=make.design.data(wwdo.proc)
+#' 
+#' #Fixing Phi Parameters for sampling periods where HY WWDO were not available in population
+#' 	hy.phi1=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==1,]))
+#' 	hy.phi2=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==2,]))
+#' 	hy.phi3=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==3,]))
+#' 	hy.phi4=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==4,]))
+#' 	hy.phi5=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==5,]))
+#' 	hy.phi6=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==6,]))
+#' 	hy.phi7=as.numeric(row.names(wwdo.ddl$Phi[wwdo.ddl$Phi$group=="HY" & wwdo.ddl$Phi$time==7,]))
+#' 	hy.phi.fix=c(hy.phi1, hy.phi2, hy.phi3, hy.phi4, hy.phi5, hy.phi6, hy.phi7)
+#' 	
+#' #Fixing PENT Parameters for sampling period where HY WWDO were not available in population
+#' 	hy.pent2=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==2,]))
+#' 	hy.pent3=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==3,]))
+#' 	hy.pent4=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==4,]))
+#' 	hy.pent5=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==5,]))
+#' 	hy.pent6=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==6,]))
+#' 	hy.pent7=as.numeric(row.names(wwdo.ddl$pent[wwdo.ddl$pent$group=="HY" & wwdo.ddl$pent$time==7,]))
+#' 	hy.pent.fix=c(hy.pent2, hy.pent3, hy.pent4, hy.pent5, hy.pent6, hy.pent7)
+#' 	
+#' #####
+#' #Real Parameter Definitions
+#' #####
+#' #Detection process
+#' 	p.dot=list(formula=~1)
+#' 	p.time=list(formula=~time)
+#' 	p.group=list(formula=~group)
+#' 	p.g.time=list(formula=~group:time)
+#' 	
+#' #Survival process
+#' 	Phi.dot.fix=list(formula=~1, fixed=list(index=hy.phi.fix, value=c(0,0,0,0,0,0,0)))
+#' 	Phi.time.fix=list(formula=~time, fixed=list(index=hy.phi.fix, value=c(0,0,0,0,0,0,0)))
+#' 	Phi.age.fix=list(formula=~group, fixed=list(index=hy.phi.fix, value=c(0,0,0,0,0,0,0)))
+#' 	Phi.timeage.fix=list(formula=~time:group, fixed=list(index=hy.phi.fix, value=c(0,0,0,0,0,0,0)))
+#' 	
+#' #Entry Process-always time dependent, otherwise makes no sense in my situation
+#' 	pent.time.fix=list(formula=~time, fixed=list(index=hy.pent.fix, value=c(0,0,0,0,0,0)))
+#' 	
+#' 	Model.1=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.dot.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	Model.2=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.time.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	Model.3=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.age.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	Model.4=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.timeage.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	Model.5=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.timeage.fix, p=p.time, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	Model.6=mark(wwdo.proc, wwdo.ddl, model.parameters=list(Phi=Phi.timeage.fix, p=p.g.time, pent=pent.time.fix, N=list(formula=~group)), invisible=FALSE)
+#' 	collect.models()
+#' }
+#' wwdo.out=wwdo.popan()
+#' wwdo.out
+#' }
+NULL
 
 #' Summary of changes by version
 #' 

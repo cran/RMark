@@ -354,8 +354,8 @@
 #' @param parm.specific if TRUE, forces a link to be specified for each parameter
 #' @param mlogit0 if TRUE, any real parameter that is fixed to 0 and has an mlogit link will 
 #' have its link changed to logit so it can be simplified
-#' @param threads number of cpus to use with mark.exe if positive or number of cpus to remain idle if negative
 #' @param hessian if TRUE specifies to MARK to use hessian rather than second partial matrix
+#' @param accumulate if TRUE accumulate like data values into frequencies
 #' @return model: a MARK object except for the elements \code{output} and
 #' \code{results}. See \code{\link{mark}} for a detailed description of the
 #' list contents.
@@ -405,7 +405,7 @@
 #'   parameters=list(Phi=PhiFlood, p=pdot))
 #' }
 make.mark.model <-
-function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,call=NULL,default.fixed=TRUE,options=NULL,profile.int=FALSE,chat=NULL,simplify=TRUE,input.links=NULL,parm.specific=FALSE,mlogit0=FALSE,threads=-1,hessian=FALSE)
+function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,call=NULL,default.fixed=TRUE,options=NULL,profile.int=FALSE,chat=NULL,simplify=TRUE,input.links=NULL,parm.specific=FALSE,mlogit0=FALSE,hessian=FALSE,accumulate=TRUE)
 {
 
 #  *******************  INTERNAL FUNCTIONS    *********************************
@@ -1132,7 +1132,6 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 	    zzd=data.frame(cbind(zz,data$data[,covariates]))
   else
 	    zzd=zz
-  accumulate=TRUE
   if(etype!="Nest" & accumulate)
   {
 	  pasted.data=apply(zzd, 1, paste, collapse = "")
@@ -1151,9 +1150,9 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #
 
   if(is.null(nocc.secondary))
-     string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype, "Threads=", threads)
+     string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype)
   else
-     string=paste("proc title ",title,";\nproc chmatrix occasions=",sum(nocc.secondary)," groups=",number.of.groups," etype=",etype, "Threads=", threads)
+     string=paste("proc title ",title,";\nproc chmatrix occasions=",sum(nocc.secondary)," groups=",number.of.groups," etype=",etype)
   if(model.list$strata)string=paste(string," strata=",data$nstrata,sep="")
   if(!is.null(covariates))
   {
