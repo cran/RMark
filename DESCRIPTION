@@ -1,19 +1,20 @@
 Package: RMark
-Version: 2.1.4
-Date: 2012-12-11
+Version: 2.1.5
+Date: 2013-3-28
 Title: R Code for MARK Analysis
 Author: Jeff Laake <jeff.laake@noaa.gov> with code contributions from
-        Eldar Rakhimberdiev and Ben Augustine, and example data and
-        analysis from Bret Collier, Jay Rotella and Andrew Paul
+        Eldar Rakhimberdiev, Ben Augustine and Daniel Turek, and
+        example data and analysis from Bret Collier, Jay Rotella and
+        Andrew Paul.
 Description: This package provides an interface to the software package
         MARK developed by Gary White. MARK is freely available at
         (http://www.phidot.org/software/mark/download/) but is not open
         source.
 SystemRequirements: notepad.exe, mark.exe (>= 6.2) (or mark32.exe and
         mark64.exe) and rel_32.exe (see README.txt)
-Depends: R (>= 2.13.0), plotrix, snowfall, coda, msm, nlme, matrixcalc
+Depends: R (>= 2.13.0), plotrix, coda, msm, nlme, matrixcalc, snowfall
 Imports: parallel
-Suggests: lattice
+Suggests: lattice, splines
 LazyLoad: yes
 License: GPL (>= 2)
 Maintainer: Jeff Laake <Jeff.Laake@noaa.gov>
@@ -39,6 +40,8 @@ Collate: 'add.design.data.R' 'adjust.chat.R' 'adjust.parameter.count.R'
         'summary.mark.R' 'TransitionMatrix.R' 'utility.r'
         'valid.parameters.R' 'var.components.R' 'var.components.reml.r'
         'zzz.R' 'RMark-package.R' 'create.mark.mcmc.R' 'splitCH.r'
-Packaged: 2012-12-11 22:11:12 UTC; JLaake
+        'mata.wald.r'
+Packaged: 2013-04-02 23:27:34 UTC; JLaake
+NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2012-12-12 09:19:32
+Date/Publication: 2013-04-03 01:37:08
