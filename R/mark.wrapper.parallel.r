@@ -72,6 +72,7 @@
 #' results
 #' @author Eldar Rakhimberdiev
 #' @export 
+#' @import snowfall
 #' @seealso \code{\link{collect.models}}, \code{\link{mark}},
 #' \code{\link{create.model.list}}
 #' @keywords utility
@@ -102,7 +103,8 @@
 #' # Create a list using the 4 p modls and 3 delta models (12 models total)
 #' 	cml=create.model.list("MSOccupancy")
 #' # Fit each model in the list and return the results
-#' 	return(mark.wrapper.parallel(cml,data=NicholsMS.proc,ddl=NicholsMS.ddl,cpus=2,parallel=TRUE))
+#' 	return(mark.wrapper.parallel(cml,data=NicholsMS.proc,ddl=NicholsMS.ddl,
+#'     cpus=2,parallel=TRUE))
 #' }
 #' xx=do.MSOccupancy()
 #' }
@@ -144,9 +146,9 @@ mark.wrapper.parallel<-
 	if (!any(names(list.args)=="threads")) list.args$threads<-1
 #	if (any(names(list.args)=="threads")) list.args<-list.args[-which(names(list.args)=="threads")]
 #	require("parallel")
-	if (threads*cpus>parallel:::detectCores() | (threads<0 & cpus!=1)) 
+	if (threads*cpus>parallel::detectCores() | (threads<0 & cpus!=1)) 
 		stop("you've tried to use more cores than you have, try to combine threads and cpus to make ", 
-				 parallel:::detectCores(), " or less as a product\n")
+				 parallel::detectCores(), " or less as a product\n")
 	initiallist=NULL
 	if(class(initial)[1]=="marklist")
 		if(nrow(initial$model.table)!=nrow(model.list))

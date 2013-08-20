@@ -4,7 +4,7 @@
 \usage{
   get.real(model, parameter, beta = NULL, se = FALSE,
     design = NULL, data = NULL, vcv = FALSE,
-    show.fixed = TRUE)
+    show.fixed = TRUE, expand = FALSE)
 }
 \arguments{
   \item{model}{MARK model object}
@@ -30,6 +30,10 @@
 
   \item{show.fixed}{if TRUE fixed values are returned
   rather than NA in place of fixed values}
+
+  \item{expand}{if TRUE, returns vcv matrix for unique
+  parameters and only simplified unique parameters if
+  FALSE}
 }
 \value{
   estimates: if \code{se=FALSE and Beta=NULL}, a matrix of
@@ -108,6 +112,7 @@ for(i in 1:length(Phi.estimates))
   cat(names(Phi.estimates)[i],"\\n")
   print(Phi.estimates[[i]]$pim,na.print="")
 }
+require(plotrix)
 #extract parameter estimates of capture probability p with se and conf intervals
 p.table=get.real(mod,"p",se=TRUE)
 print(p.table[p.table$region==1,])  # print values from region 1
