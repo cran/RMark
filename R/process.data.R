@@ -103,8 +103,8 @@
 #' @param nocc number of occasions for Nest type; either nocc or time.intervals
 #' must be specified
 #' @param strata.labels vector of single character values used in capture
-#' history(ch) for ORDMS models; it can contain one more value beyond what is
-#' in ch for an unobservable state
+#' history(ch) for ORDMS, CRDMS, RDMSOccRepro models; it can contain one more value beyond what is
+#' in ch for an unobservable state except for RDMSOccRepro which is used to specify strata ordering (eg 0 not-occupied, 1 occupied no repro, 2 occupied with repro.
 #' @param counts named list of numeric vectors (one group) or matrices (>1
 #' group) containing counts for mark-resight models
 #' @param reverse if set to TRUE, will reverse timing of transition (Psi) and
@@ -168,7 +168,7 @@ initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL,co
 #  time.intervals       - intervals of time between the capture occasions
 #  nocc                 - number of occasions for Nest type; either nocc or time.intervals
 #                          must be specified
-#  strata.labels        - vector of single character labels for strata in ORDMS or CRDMS
+#  strata.labels        - vector of single character labels for strata in ORDMS, CRDMS, RDMSOccRepro
 #  counts               - list of numeric vectors (one group) or matrices (>1 group) 
 #              	           containing counts for mark-resight models
 #  reverse              - only valid for Multistrata model; reverses timing of movement and survival
@@ -262,6 +262,27 @@ robust.occasions<-function(times)
 #
    model.list=setup.model(model,nocc,mixtures)
 #
+#  data checks
+#
+   if(model!="Nest")
+   {
+	   if(!is.character(data$ch))
+	   {
+		   if(is.factor(data$ch))
+			   stop("\nch field is a factor and must be a character string\n")
+		   else
+			   stop("\nch field must be a character string\n")
+	   } else
+	   if(!model.list$occupancy)
+		   if(any(sapply(strsplit(data$ch,""),function(x) all(x=="0"))))
+			   stop("\nall 0 ch encountered. MARK will not accept them\n")
+	   if(!is.null(data$freq))
+	   {
+		   if(!is.numeric(data$freq))
+			   stop("\n freq field must be numeric\n")
+	   }  
+   }
+   #
 #  If multistrata design, determine number of strata and their labels
 #  Make sure multistrata designs have at least 2 strata
 #
@@ -272,7 +293,7 @@ robust.occasions<-function(times)
          inp.strata.labels=sort(ch.values[!(ch.values %in% c("0",".","1"))])
       else
          inp.strata.labels=sort(ch.values[!(ch.values %in% c("0","."))])
-	  if(model%in%c("RDMSOpenMisClass","RDMSMisClass","RDMS2MisClass"))
+	  if(model%in%c("RDMSOpenMisClass","RDMSMisClass","RDMS2MisClass","RDMSOpenMCSeas"))
 		  inp.strata.labels=inp.strata.labels[!inp.strata.labels%in%"u"]
       nstrata = length(inp.strata.labels)                  
       if(model.list$strata)
