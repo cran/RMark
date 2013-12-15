@@ -15,7 +15,8 @@
     external = FALSE, profile.int = FALSE, chat = NULL,
     reverse = FALSE, run = TRUE, input.links = NULL,
     parm.specific = FALSE, mlogit0 = FALSE, threads = -1,
-    hessian = FALSE, accumulate = TRUE)
+    hessian = FALSE, accumulate = TRUE, allgroups = FALSE,
+    strata.labels = NULL, counts = NULL)
 }
 \arguments{
   \item{data}{Either the raw data which is a dataframe with
@@ -76,6 +77,7 @@
   design matrix, modifies AIC and records both}
 
   \item{mixtures}{number of mixtures for heterogeneity
+  model or number of secondary samples for MultScaleOcc
   model}
 
   \item{se}{if TRUE, se and confidence intervals are shown
@@ -143,6 +145,22 @@
 
   \item{accumulate}{if TRUE accumulate like data values
   into frequencies}
+
+  \item{allgroups}{Logical variable; if TRUE, all groups
+  are created from factors defined in \code{groups} even if
+  there are no observations in the group}
+
+  \item{strata.labels}{vector of single character values
+  used in capture history(ch) for ORDMS, CRDMS,
+  RDMSOccRepro models; it can contain one more value beyond
+  what is in ch for an unobservable state except for
+  RDMSOccRepro which is used to specify strata ordering (eg
+  0 not-occupied, 1 occupied no repro, 2 occupied with
+  repro.}
+
+  \item{counts}{named list of numeric vectors (one group)
+  or matrices (>1 group) containing counts for mark-resight
+  models}
 }
 \value{
   model: a MARK object containing output and extracted
@@ -236,62 +254,10 @@
   results that is returned as part of the list (of class
   mark) which is the return value for this function.
 
-  The following are the MARK capture-recapture models that
-  are currently supported for argument \code{model}:
-  \tabular{ll}{ \code{model} \tab Selection in MARK \cr
-  \code{CJS} \tab Recaptures only\cr \code{Recovery} \tab
-  Recoveries only\cr \code{Burnham} \tab Both(Burnham)\cr
-  \code{Barker} \tab Both(Barker)\cr \code{Pradel} \tab
-  Pradel recruitment only\cr \code{Pradsen} \tab Pradel
-  survival and seniority\cr \code{Pradlambda} \tab Pradel
-  survival and lambda\cr \code{Pradrec} \tab Pradel
-  survival and recruitment\cr \code{LinkBarker} \tab
-  Available only in change data type as Link-Barker\cr
-  \code{Closed} \tab Closed - no heterogeneity\cr
-  \code{HetClosed} \tab Closed with heterogeneity\cr
-  \code{FullHet} \tab Closed with full heterogeneity\cr
-  \code{Huggins} \tab Huggins with no heterogeneity\cr
-  \code{HugHet} \tab Huggins with heterogeneity\cr
-  \code{HugFullHet} \tab Huggins with full heterogeneity\cr
-  \code{POPAN} \tab POPAN\cr \code{Jolly} \tab Burnham
-  formulation for original Jolly-Seber model\cr
-  \code{Known} \tab Known - known fate data (e.g,
-  radio-tracking)\cr \code{Multistrata} \tab Multistrata -
-  CJS model with strata\cr \code{Robust} \tab Robust design
-  with Closed models for secondary periods with no
-  heterogeneity\cr \code{RDHet} \tab Robust design with
-  Closed models for secondary periods with heterogeneity\cr
-  \code{RDFHet} \tab Robust design with Closed models for
-  secondary periods with full heterogeneity\cr
-  \code{RDHuggins} \tab Robust design with Huggins models
-  for secondary periods with no heterogeneity\cr
-  \code{RDHHet} \tab Robust design with Huggins models for
-  secondary periods with heterogeneity\cr \code{RDHFHet}
-  \tab Robust design with Huggins models for secondary
-  periods with full heterogeneity\cr \code{Nest} \tab Nest
-  survival\cr \code{Occupancy} \tab Site occupancy
-  modelling\cr \code{OccupHet} \tab Site occupancy
-  modelling with mixture model for heterogeneity\cr
-  \code{RDOccupEG} \tab Robust design site occupancy
-  modelling; single Psi, espsilon, and gamma\cr
-  \code{RDOccupPE} \tab Robust design site occupancy
-  modelling; mutliple Psi and espsilon\cr \code{RDOccupPG}
-  \tab Robust design site occupancy modelling; mutliple Psi
-  and gamma\cr \code{RDOccupHetEG} \tab Robust design site
-  occupancy modelling with heterogeneity; single Psi,
-  espsilon, and gamma\cr \code{RDOccupHetPE} \tab Robust
-  design site occupancy modelling with heterogeneity;
-  mutliple Psi and espsilon\cr \code{RDOccupHetPG} \tab
-  Robust design site occupancy modelling with
-  heterogeneity; mutliple Psi and gamma\cr
-  \code{OccupRNPoisson} \tab Royle-Nichols Poisson site
-  occupancy modelling\cr \code{OccupRNNegBin} \tab
-  Royle-Nichols Negative Binomial site occupancy
-  modelling\cr \code{OccupRPoisson} \tab Royle count
-  Poisson site occupancy modelling\cr \code{OccupRNegBin}
-  \tab Royle count Negative Binomial site occupancy
-  modelling\cr \code{MSOccupancy} \tab Multi-state site
-  occupancy modelling\cr }
+  The models that are currently supported are listed in
+  MarkModels.pdf which you can find in the RMark
+  sub-directory of your R Library.  Also, they are listed
+  under Help/Data Types in the MARK interface.
 
   The function mark is a shell that calls 5 other functions
   in the following order as needed: 1)

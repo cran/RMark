@@ -13,47 +13,9 @@
 #' creates a list of results that is returned as part of the list (of class
 #' mark) which is the return value for this function.
 #' 
-#' The following are the MARK capture-recapture models that are currently
-#' supported for argument \code{model}: \tabular{ll}{ \code{model} \tab
-#' Selection in MARK \cr \code{CJS} \tab Recaptures only\cr \code{Recovery}
-#' \tab Recoveries only\cr \code{Burnham} \tab Both(Burnham)\cr \code{Barker}
-#' \tab Both(Barker)\cr \code{Pradel} \tab Pradel recruitment only\cr
-#' \code{Pradsen} \tab Pradel survival and seniority\cr \code{Pradlambda} \tab
-#' Pradel survival and lambda\cr \code{Pradrec} \tab Pradel survival and
-#' recruitment\cr \code{LinkBarker} \tab Available only in change data type as
-#' Link-Barker\cr \code{Closed} \tab Closed - no heterogeneity\cr
-#' \code{HetClosed} \tab Closed with heterogeneity\cr \code{FullHet} \tab
-#' Closed with full heterogeneity\cr \code{Huggins} \tab Huggins with no
-#' heterogeneity\cr \code{HugHet} \tab Huggins with heterogeneity\cr
-#' \code{HugFullHet} \tab Huggins with full heterogeneity\cr \code{POPAN} \tab
-#' POPAN\cr \code{Jolly} \tab Burnham formulation for original Jolly-Seber
-#' model\cr \code{Known} \tab Known - known fate data (e.g, radio-tracking)\cr
-#' \code{Multistrata} \tab Multistrata - CJS model with strata\cr \code{Robust}
-#' \tab Robust design with Closed models for secondary periods with no
-#' heterogeneity\cr \code{RDHet} \tab Robust design with Closed models for
-#' secondary periods with heterogeneity\cr \code{RDFHet} \tab Robust design
-#' with Closed models for secondary periods with full heterogeneity\cr
-#' \code{RDHuggins} \tab Robust design with Huggins models for secondary
-#' periods with no heterogeneity\cr \code{RDHHet} \tab Robust design with
-#' Huggins models for secondary periods with heterogeneity\cr \code{RDHFHet}
-#' \tab Robust design with Huggins models for secondary periods with full
-#' heterogeneity\cr \code{Nest} \tab Nest survival\cr \code{Occupancy} \tab
-#' Site occupancy modelling\cr \code{OccupHet} \tab Site occupancy modelling
-#' with mixture model for heterogeneity\cr \code{RDOccupEG} \tab Robust design
-#' site occupancy modelling; single Psi, espsilon, and gamma\cr
-#' \code{RDOccupPE} \tab Robust design site occupancy modelling; mutliple Psi
-#' and espsilon\cr \code{RDOccupPG} \tab Robust design site occupancy
-#' modelling; mutliple Psi and gamma\cr \code{RDOccupHetEG} \tab Robust design
-#' site occupancy modelling with heterogeneity; single Psi, espsilon, and
-#' gamma\cr \code{RDOccupHetPE} \tab Robust design site occupancy modelling
-#' with heterogeneity; mutliple Psi and espsilon\cr \code{RDOccupHetPG} \tab
-#' Robust design site occupancy modelling with heterogeneity; mutliple Psi and
-#' gamma\cr \code{OccupRNPoisson} \tab Royle-Nichols Poisson site occupancy
-#' modelling\cr \code{OccupRNNegBin} \tab Royle-Nichols Negative Binomial site
-#' occupancy modelling\cr \code{OccupRPoisson} \tab Royle count Poisson site
-#' occupancy modelling\cr \code{OccupRNegBin} \tab Royle count Negative
-#' Binomial site occupancy modelling\cr \code{MSOccupancy} \tab Multi-state
-#' site occupancy modelling\cr }
+#' The models that are currently supported are listed in MarkModels.pdf which
+#' you can find in the RMark sub-directory of your R Library.  Also, they are
+#' listed under Help/Data Types in the MARK interface.
 #' 
 #' The function mark is a shell that calls 5 other functions in the following
 #' order as needed: 1) \code{\link{process.data}}, 2)
@@ -123,7 +85,7 @@
 #' @param invisible If TRUE, window for running MARK is hidden
 #' @param adjust If TRUE, adjusts npar to number of cols in design matrix,
 #' modifies AIC and records both
-#' @param mixtures number of mixtures for heterogeneity model
+#' @param mixtures number of mixtures for heterogeneity model or number of secondary samples for MultScaleOcc model
 #' @param se if TRUE, se and confidence intervals are shown in summary sent to
 #' screen
 #' @param filename base filename for files created by MARK.EXE. Files are named
@@ -158,6 +120,14 @@
 #' @param threads number of cpus to use with mark.exe if positive or number of cpus to remain idle if negative
 #' @param hessian if TRUE specifies to MARK to use hessian rather than second partial matrix
 #' @param accumulate if TRUE accumulate like data values into frequencies
+#' @param allgroups Logical variable; if TRUE, all groups are created from
+#' factors defined in \code{groups} even if there are no observations in the
+#' group
+#' @param strata.labels vector of single character values used in capture
+#' history(ch) for ORDMS, CRDMS, RDMSOccRepro models; it can contain one more value beyond what is
+#' in ch for an unobservable state except for RDMSOccRepro which is used to specify strata ordering (eg 0 not-occupied, 1 occupied no repro, 2 occupied with repro.
+#' @param counts named list of numeric vectors (one group) or matrices (>1
+#' group) containing counts for mark-resight models
 #' @return model: a MARK object containing output and extracted results. It is
 #' a list with the following elements \item{data}{name of the processed data
 #' frame} \item{model}{type of analysis model (see list above)}
@@ -234,55 +204,9 @@ mark <-
 function(data,ddl=NULL,begin.time=1,model.name=NULL,model="CJS",title="",model.parameters=list(),initial=NULL,
 design.parameters=list(), right=TRUE, groups = NULL, age.var = NULL, initial.ages = 0, age.unit = 1, time.intervals = NULL,nocc=NULL,output=TRUE,
 invisible=TRUE,adjust=TRUE,mixtures=1,se=FALSE,filename=NULL,prefix="mark",default.fixed=TRUE,silent=FALSE,retry=0,options=NULL,brief=FALSE,
-realvcv=FALSE,delete=FALSE,external=FALSE,profile.int=FALSE,chat=NULL,reverse=FALSE,run=TRUE,input.links=NULL,parm.specific=FALSE,mlogit0=FALSE,threads=-1,hessian=FALSE,accumulate=TRUE)
+realvcv=FALSE,delete=FALSE,external=FALSE,profile.int=FALSE,chat=NULL,reverse=FALSE,run=TRUE,input.links=NULL,parm.specific=FALSE,mlogit0=FALSE,threads=-1,hessian=FALSE,accumulate=TRUE,
+allgroups=FALSE,strata.labels=NULL,counts=NULL)
 {
-# -----------------------------------------------------------------------------------------------------------------------
-# mark -  a single function that processes data, creates the design data, makes the mark model and runs it.
-#
-# Arguments:
-#
-#  data                 - either the raw data which is a dataframe with at least one column named 
-#                         ch which is a character field containing the capture history or a processed dataframe
-#  ddl                  - design data list which contains an element for each parameter type; if NULL it is created
-#  begin.time           - time of first capture(release) occasion
-#  model.name           - optional model name
-#  model                - type of c-r model (eg CJS, Burnham, Barker) 
-#  title                - a title for the analysis 
-#  model.parameters     - list of parameter model specifications
-#  initial              - vector of initial values for beta parameters
-#  design.parameters    - specification of any grouping variables for design data for each parameter
-#  right                - if TRUE, any intervals created in design.parameters are closed on the right and open on left and vice-versa if FALSE
-#  groups               - list of factors for creating groups
-#  age.var              - index in groups of a variable that represents age
-#  initial.ages         - an initial age for each age group
-#  age.unit             - increment of age for each increment of time
-#  time.intervals       - intervals of time between the capture occasions
-#  nocc                 - number of occasions specification for Nest type
-#  output               - if TRUE produces summary of model input and model output
-#  invisible            - if TRUE, window for running MARK is hidden
-#  adjust               - if TRUE, adjusts npar to # of cols in design matrix, modifies AIC and records both
-#  mixtures             - # of mixtures for heterogeneity model
-#  se                   - if TRUE, se and confidence intervals are shown in summary sent to screen
-#  filename             - base filename for MARK input and output files (filename.* - no numeric sequence is added)
-#  prefix               - base filename prefix for MARK input and output files; eg mark001.* etc
-#  default.fixed        - if TRUE, default fixed values are assigned to any parameters missing from the full design data
-#  silent               - if TRUE, errors that are encountered are suppressed
-#  retry                - number of reanalyses to perform with new starting values when one or more parameters are singular
-#  options              - character string of options for Proc Estimate statement in MARK .inp file
-#  brief                - if TRUE and output=TRUE only gives a brief summary of model
-#  realvcv              - if TRUE the vcv matrix of the real parameters is extracted and stored in the model results
-#  delete               - if TRUE the output files are deleted after the results are extracted
-#  external             - if TRUE the mark object is saved externally rather than in the workspace; the filename is kept in its place
-#  profile.int          - if TRUE will request profile intervals for each real parameter; or you can give a vector of real parameter indices
-#  chat                 - value of chat used for profile intervals
-#
-#  Value: 
-#
-#  model - a MARK object model containing output and extracted results
-#
-#  Functions used: process.data, make.design.data, make.mark.model, run.mark.model, summary.mark
-# 
-# -----------------------------------------------------------------------------------------------------------------------
 #
 #  If the data haven't been processed (data$data is NULL) do it now with specified or default arguments
 # 
@@ -296,7 +220,8 @@ if(is.null(data$data))
    }
    data.proc=process.data(data,begin.time=begin.time, model=model,mixtures=mixtures, 
                           groups = groups, age.var = age.var, initial.ages = initial.ages, 
-                          age.unit = age.unit, time.intervals = time.intervals,nocc=nocc,reverse=reverse)
+                          age.unit = age.unit, time.intervals = time.intervals,nocc=nocc,reverse=reverse,
+				          allgroups=allgroups, strata.labels=strata.labels,counts=counts)
 }   
 else
    data.proc=data
@@ -368,6 +293,7 @@ while(i<=retry & !converge)
          i=i+1
          converge=FALSE
          initial=runmodel$results$beta$estimate
+		 names(initial)=rownames(runmodel$results$beta)
          initial[runmodel$results$singular]=0
          next
       }
