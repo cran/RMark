@@ -29,8 +29,9 @@
 #' model-averaged estimates is computed using equation 4.9 of Burnham and
 #' Anderson (2002) if if \code{revised=FALSE}; otherwise it uses eq 6.12.
 #' 
-#' @usage \method{model.average}{list}(x, revised=TRUE, mata=FALSE, normal.lm=FALSE, residual.dfs=0, alpha=0.025,...)
-#' @S3method model.average list
+#' @usage \method{model.average}{list}(x, revised=TRUE, mata=FALSE, normal.lm=FALSE, 
+#'                                        residual.dfs=0, alpha=0.025,...)
+#' @export model.average.list
 #' @param x a list containing the following elements: 1) \code{estimate} - a
 #' vector or matrix of estimates, 2)a vector of model selection criterion value
 #' named \code{AIC,AICc,QAIC,QAICc} or a \code{weight} variable that sums to 1
@@ -185,7 +186,15 @@ model.average.list=function(x,revised=TRUE, mata=FALSE, normal.lm=FALSE, residua
   estimate=colSums(estimates*weights)
   if("vcv" %in% xnames)
   {
-     se=t(sapply(x$vcv,function(x) sqrt(diag(x))))
+	  for (i in 1:length(x$vcv))
+	  {
+		  if(any(diag(x$vcv[[i]])<0)) 
+	      {
+		      warning("Negative variances for parameters ",paste((1:ncol(x$vcv[[i]]))[diag(x$vcv[[i]])<0],collapse=", ")," for model ",i,". Setting those variances to 0")
+		      diag(x$vcv[[i]])[diag(x$vcv[[i]])<0]=0
+	      }
+	  }
+	 se=t(sapply(x$vcv,function(x) sqrt(diag(x))))
 	 if(nrow(x$vcv[[1]])==1)se=t(se)
      if(revised)
         se=sqrt(apply((se^2+(t(t(estimates)-estimate))^2)*weights,2,sum,na.rm=TRUE))
@@ -195,7 +204,10 @@ model.average.list=function(x,revised=TRUE, mata=FALSE, normal.lm=FALSE, residua
      for (i in 1:length(x$vcv))
      {
        xse=sqrt(diag(x$vcv[[i]]))
-       cor=cor+weights[i]*x$vcv[[i]]/outer(xse,xse,"*")
+	   xcor=x$vcv[[i]]/outer(xse,xse,"*")
+	   xcor[is.infinite(xcor)|is.nan(xcor)]=0
+	   diag(xcor)=1
+       cor=cor+weights[i]*xcor
      }
      vcv=cor*outer(se,se,"*")
 	 if(!mata)
@@ -216,9 +228,9 @@ model.average.list=function(x,revised=TRUE, mata=FALSE, normal.lm=FALSE, residua
    else
    {
 	 if(revised)
-		   se=sqrt(apply((se^2+(t(t(estimates)-estimate))^2)*weights,2,sum,na.rm=TRUE))
+		   se=sqrt(apply((x$se^2+(t(t(estimates)-estimate))^2)*weights,2,sum,na.rm=TRUE))
 	 else 
-		   se=apply(sqrt(se^2+(t(t(estimates)-estimate))^2)*weights,2,sum,na.rm=TRUE)
+		   se=apply(sqrt(x$se^2+(t(t(estimates)-estimate))^2)*weights,2,sum,na.rm=TRUE)
 	 if(!mata)
 		 return(list(estimate=estimate,se=se))
 	 else

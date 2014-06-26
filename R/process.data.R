@@ -149,6 +149,9 @@ robust.occasions<-function(times)
 {
    if(times[1] !=0 | times[length(times)]!=0)
       stop("\nIncorrect structure for time intervals with robust design. Time intervals must begin and end with a zero.\n")
+   merge_int=unlist(strsplit(paste(times,collapse=""),"0"))
+   if(length(merge_int[merge_int!=""])!=length(times[times>0]))
+	   stop("\nIncorrect structure for time intervals with robust design. Must have at least 2 secondary occasions per primary period.\n")
    times.vec=match(as.character(times),"0")
    nocc.secondary=nchar(unlist(strsplit(paste(as.character(times.vec),collapse=""),"NA")))
    nocc=length(nocc.secondary)
@@ -265,7 +268,7 @@ robust.occasions<-function(times)
            if(!all(inp.strata.labels %in% strata.labels))
               stop(paste("Some strata labels in data",paste(inp.strata.labels),"are not in strata.labels"))
            if(sum(as.numeric(strata.labels %in% inp.strata.labels))< (nstrata-1))
-              cat("Note: More than one non-observable state has been specified")
+              message("Note: More than one non-observable state has been specified")
         }
         if(nstrata<2)stop("\nAny multistrata model must have at least 2 strata\n")
       } else
@@ -428,13 +431,14 @@ else
 #    var[i]=paste(dataname,"$",groups[i],sep="")
 #    vari=eval.parent(parse(text=var[i]))
     if(!is.factor(vari))
-        stop(paste("\n ",groups[i]," is not a factor variable\n"))
-     else
-     {
-        n.levels[i]=length(levels(vari))
-        facmat=cbind(facmat,as.numeric(vari)-1)
-        faclabs[[i]]=levels(vari)
-     }       
+	{
+		warning(paste("\n ",groups[i]," is not a factor variable. Coercing to factor.\n"))
+	    data[,groups[i]]=factor(data[,groups[i]])
+		vari=data[,groups[i]]
+	}
+    n.levels[i]=length(levels(vari))
+    facmat=cbind(facmat,as.numeric(vari)-1)
+    faclabs[[i]]=levels(vari)
   }
   cumlevels=cumprod(n.levels)
   number.of.groups=cumlevels[length(cumlevels)]

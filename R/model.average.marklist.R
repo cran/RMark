@@ -22,8 +22,9 @@
 #' using covariates. Note that this will only work with models created after
 #' v1.5.0 such that average covariate values are stored in each model object.
 #' 
-#' @usage \method{model.average}{marklist}(x, parameter, data, vcv, drop=TRUE, indices=NULL, revised=TRUE, mata=FALSE, normal.lm=FALSE, residual.dfs=0, alpha=0.025,...)
-#' @S3method model.average marklist
+#' @usage \method{model.average}{marklist}(x, parameter, data, vcv, drop=TRUE, indices=NULL, revised=TRUE, mata=FALSE,
+#'         normal.lm=FALSE, residual.dfs=0, alpha=0.025,...)
+#' @export model.average.marklist
 #' @param x a list of mark model results and a model.table constructed by
 #' \code{\link{collect.models}}
 #' @param parameter name of model parameter (e.g., "Phi" for CJS models); if
@@ -174,7 +175,7 @@ if(is.null(model.list$model.table))
 if(!is.null(parameter))
 {
    if(!is.null(indices))
-      cat("\nNote: indices value has been ignored because parameter was set\n")
+      message("\nNote: indices value has been ignored because parameter was set\n")
    if(!parameter%in%names(model$parameters))
       stop(paste("\n",parameter,"is not a valid parameter for these results\n"))
    parameters=setup.parameters(model$model)
@@ -197,7 +198,7 @@ for (i in 1:dim(model.table)[1])
   model=load.model(model.list[[i]])
   if(is.null(model$output) || is.null(model$results))
   {
-     cat("\nModel ",i,"is missing results and was excluded from model averaging\n")
+     message("\nModel ",i,"is missing results and was excluded from model averaging\n")
      dropped.models=c(dropped.models,i)
   }
 }
@@ -219,7 +220,7 @@ if(drop)
 #      if(any(diag(model$results$beta.vcv)<0))
       {
          dropped.models=c(dropped.models,i)
-         cat("\nModel ",i,"dropped from the model averaging because one or more beta variances are not positive\n")
+         message("\nModel ",i,"dropped from the model averaging because one or more beta variances are not positive\n")
       }
    }
 #
@@ -338,7 +339,9 @@ for (i in 1:dim(model.table)[1])
              outer(reals[[i]]$se,reals[[i]]$se,"*")
       full.vcv[is.nan(full.vcv)]=0
       full.vcv[is.infinite(full.vcv)]=0
-      diag(full.vcv)=1
+	  if(any(is.infinite(diag(full.vcv)))) 
+		  warning("Infinite correlation (se=0) for model  ",i, " for estimate ",which(is.infinite(diag(full.vcv))),"\n")
+	  diag(full.vcv)=1
       cor.average=cor.average+full.vcv*model.table$weight[as.numeric(row.names(model.table))==i]
    }
 }

@@ -61,21 +61,25 @@
 #' @keywords model
 #' @examples
 #' \donttest{
-#' data(dipper)
-#' for(sex in unique(dipper$sex))
+#' test=function()
 #' {
-#' 	x=dipper[dipper$sex==sex,]
-#' 	x.proc=process.data(x,model="CJS")
-#' 	x.ddl=make.design.data(x.proc)
-#' 	Phi.dot=list(formula=~1)
-#' 	Phi.time=list(formula=~time)
-#' 	p.dot=list(formula=~1)
-#' 	p.time=list(formula=~time)
-#' 	cml=create.model.list("CJS")
-#' 	x.results=mark.wrapper(cml,data=x.proc,ddl=x.ddl,prefix=sex)
-#' 	assign(paste(sex,"results",sep="."),x.results)
+#'   data(dipper)
+#'   for(sex in unique(dipper$sex))
+#'   {
+#' 	  x=dipper[dipper$sex==sex,]
+#' 	  x.proc=process.data(x,model="CJS")
+#' 	  x.ddl=make.design.data(x.proc)
+#' 	  Phi.dot=list(formula=~1)
+#' 	  Phi.time=list(formula=~time)
+#' 	  p.dot=list(formula=~1)
+#' 	  p.time=list(formula=~time)
+#' 	  cml=create.model.list("CJS")
+#' 	  x.results=mark.wrapper(cml,data=x.proc,ddl=x.ddl,prefix=sex)
+#' 	  assign(paste(sex,"results",sep="."),x.results)
+#'   }
+#'   rm(Male.results,Female.results,x.results)
 #' }
-#' rm(Male.results,Female.results,x.results)
+#' test()
 #' cleanup(ask=FALSE,prefix="Male")
 #' cleanup(ask=FALSE,prefix="Female")
 #' }
@@ -190,11 +194,14 @@ delete=FALSE,external=FALSE,threads=-1,ignore.stderr=FALSE)
 #
 # Read in the output file
 #
-  out=readLines(outfile)
+  if(file.exists(outfile))
+     out=readLines(outfile)
+  else
+	 stop("\nOutput file does not exist. Unable to find or run mark.exe\n")
 #
 # Extract relevant parts of output
 #
-  results=extract.mark.output(out,model,adjust,realvcv,vcvfile)
+  results=try(extract.mark.output(out,model,adjust,realvcv,vcvfile))
 #  file.rename("markxxx.vcv",vcvfile)
   model$results=results
 #
@@ -203,6 +210,12 @@ delete=FALSE,external=FALSE,threads=-1,ignore.stderr=FALSE)
 #
   model$output=basefile
   model$input=NULL
+  if(class(results)=="try-error") 
+  {
+	  print.mark(model)
+	  message("\nProblem extracting output. Look at MARK output file to see what is wrong.\n")
+	  return(NULL)
+  }
 #
 #  23-Aug-05; if simplify replace old design matrix with simplified one
 #  10 Jan 06; save labels from full design matrix and store in simplify for output

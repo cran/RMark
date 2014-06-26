@@ -130,7 +130,7 @@ function(model,parameter,beta=NULL,se=FALSE,design=NULL,data=NULL,vcv=FALSE,show
   model=load.model(model)
   if(is.null(model$results)) 
   {
-     cat("Model output is not available\n")
+     message("Model output is not available\n")
      invisible()
   }
 #
@@ -363,7 +363,11 @@ function(model,parameter,beta=NULL,se=FALSE,design=NULL,data=NULL,vcv=FALSE,show
          rownames(estimates)=output.labels
      }
   } else
-     estimates=cbind(estimates,model$design.data[[parameter]])
+  {
+	  dd=model$design.data[[parameter]]
+	  estimates=cbind(estimates,dd[,!names(dd)%in%c("par.index","model.index")])
+	  
+  }
 #
 # Return extracted estimates in chosen format
 #

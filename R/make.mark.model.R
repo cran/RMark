@@ -974,7 +974,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
      for(j in 1:length(names(parameters[[i]])))
         if(!(names(parameters[[i]])[j]%in%c("fixed","formula","link","share","remove.intercept","default")))
         {
-           cat("\nInvalid model specification for parameter ",names(parameters)[i],".\nUnrecognized element ",names(parameters[[i]])[j])
+           message("\nInvalid model specification for parameter ",names(parameters)[i],".\nUnrecognized element ",names(parameters[[i]])[j])
            stop()
         }
 #
@@ -1023,7 +1023,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 # 
      if(!(parameters[[i]]$link %in% c("identity","log","logit","mlogit","loglog","cloglog","sin")))
      {
-        cat("\nInvalid link value ",parameters[[i]]$link)
+        message("\nInvalid link value ",parameters[[i]]$link)
         stop()
      }
   }
@@ -1074,10 +1074,10 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 		       row.names(ddl[[names(parameters)[i]]])=c(rn1,rn2)
 		   } else
 		   {
-			   cat(paste("Error: for a shared ",paste(names(parameters)[i],shared_par,sep="&"),
+			   message(paste("Error: for a shared ",paste(names(parameters)[i],shared_par,sep="&"),
 				" model, their design data columns must match\n. If you add design data to one it must also be added to the other.\n"))
-			   cat(paste("Columns of",names(parameters)[i]," : ",names(ddl[i]),"\n"))
-			   cat(paste("Columns of",shared_par,": ",names(ddl[[shared_par]]),"\n"))
+			   message(paste("Columns of",names(parameters)[i]," : ",names(ddl[i]),"\n"))
+			   message(paste("Columns of",shared_par,": ",names(ddl[[shared_par]]),"\n"))
 			   stop("Function terminated\n") 
 		   }
 	   }
@@ -1132,8 +1132,8 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                  time.dependent[[parx]][j]=TRUE
                  if(any(!cov.bytime%in%names(data$data)))
                  {
-                     cat(paste("\nThe following covariates are missing:",cov.bytime[!cov.bytime%in%names(data$data)],collapse=""))
-                     cat("\nIf any are used in the resulting model it will fail\n")
+                     message(paste("\nThe following covariates are missing:",cov.bytime[!cov.bytime%in%names(data$data)],collapse=""))
+                     message("\nIf any are used in the resulting model it will fail\n")
                      cov.bytime=cov.bytime[cov.bytime%in%names(data$data)]
                  }
               }
@@ -1151,7 +1151,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 # 
 #  Unless this is nest data, aggregate data
 #
-# Fix 9 Nov 2013; create unique covariates before selecting data
+# Fix 9 Nov 2013; create unique covariate names before selecting data
   covariates=unique(covariates)
   if(!is.null(covariates))
 	    zzd=data.frame(cbind(zz,data$data[,covariates]))
@@ -1165,8 +1165,16 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 		  freq=t(sapply(split(data$freq,pasted.data ),colSums))
 	  else
 		  freq=sapply(split(data$freq, pasted.data),sum)
-	  zzd=unique(zzd[order(pasted.data),])
-	  zzd[,2:(1+ng)]=freq
+	  zzd=zzd[order(pasted.data),]
+	  zzd=zzd[!duplicated(pasted.data[order(pasted.data)]),]
+	  if(ng>1)
+	  {
+		  if(nrow(freq)!=nrow(zzd))
+			  stop("problem with accumulating data. Set accumulate=FALSE and contact maintainer")
+	  }else
+	  if(length(freq)!=nrow(zzd))
+		  stop("problem with accumulating data. Set accumulate=FALSE and contact maintainer")
+	  zzd[,2:(ng+1)]=freq
 	  zz=zzd[,1:(ng+1)]
   }
 #
@@ -1209,7 +1217,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
             zz=zzd
      }
   }
-  write(strwrap(string,100),file=outfile,append=TRUE)
+  write(strwrap(string,100,prefix=" "),file=outfile,append=TRUE)
 #
 #  Output group labels
 #
@@ -1239,7 +1247,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   }
   else
 #     write.table(zz,file=outfile,eol=";\n",sep=" ",col.names=FALSE,row.names=FALSE,quote=FALSE,append=TRUE)
-      apply(zz,1,function(x) write(strwrap(paste(paste(x,collapse=" "),";",sep=""),80),file=outfile,append=TRUE))	 
+      apply(zz,1,function(x) write(strwrap(paste(paste(x,collapse=" "),";",sep=""),80,prefix=" "),file=outfile,append=TRUE))	 
 #
 # Output counts section of Mark-resight models if appropriate
 #
@@ -1415,10 +1423,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                 fix.indices=parameters[[i]]$fixed$index
              else
                 if(is.list(parameters[[i]]$fixed)&!any(names(parameters[[i]]$fixed)%in%c("time","age","cohort","group")))
-                {
-                   cat("\nUnrecognized structure for fixed parameters =",parameters[[i]]$fixed)
-                   stop()
-                }
+                   stop(paste("\nUnrecognized structure for fixed parameters =",parameters[[i]]$fixed))
                 else
                     if(!is.null(parameters[[i]]$fixed[["time"]]))
                     {
@@ -1450,10 +1455,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
              {
                  fixvalues=c(fixvalues,parameters[[i]]$fixed$value)
                  if(length(fixlist)!=length(fixvalues))
-                 {
-                    cat(paste("\nLengths of indices and values do not match for fixed parameters for",names(parameters)[i],"\n"))
-                    stop()
-                 }
+                    stop(paste("\nLengths of indices and values do not match for fixed parameters for",names(parameters)[i],"\n"))
              }
 			 # check for duplicates and use latter values
              if(any(duplicated(fixlist)))
@@ -1541,10 +1543,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
         {
             intercept.column=(1:dim(dm)[2])[colSums(dm)==dim(dm)[1]]
             if(length(intercept.column)==0)
-            {
-               cat("\nIntercept column not found.  Do not use ~-1 with remove.intercept\n")
-               stop()
-            }
+               stop("\nIntercept column not found.  Do not use ~-1 with remove.intercept\n")
             else
             {
                if(length(intercept.column)==1)
@@ -1698,7 +1697,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
             {
                 if(length(names(initial))==0)
 				{
-				  cat("\nLength of initial vector doesn't match design matrix: ",ncol(complete.design.matrix)," \n")
+				  message("\nLength of initial vector doesn't match design matrix: ",ncol(complete.design.matrix)," \n")
 				  print(colnames(complete.design.matrix))
                   stop()
 			    }else
@@ -1878,13 +1877,13 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #
   model$profile.int=profile.int
   model$chat=chat
-# Assign Mlogits that are set to 0 to a Logit link so they can be simplified
+# Assign Mlogits that are set to a fixed value to a Logit link so they can be simplified
   if(mlogit0)
   {
-	  fixedzero=model$fixed$index[model$fixed$value==0]
+	  fixedvalue=model$fixed$index
 	  mlogit.indices=grep("mlogit",model$links)
-	  if(length(mlogit.indices)>0 & length(fixedzero)>0)
-		  model$links[fixedzero[fixedzero%in%mlogit.indices]]="Logit"
+	  if(length(mlogit.indices)>0 & length(fixedvalue)>0)
+		  model$links[fixedvalue[fixedvalue%in%mlogit.indices]]="Logit"
   }
 # Simplify the pim structure
   if(simplify) model=simplify.pim.structure(model)

@@ -25,7 +25,8 @@
 #' of Turek and Fletcher (2012).
 #' @aliases mata.wald tailarea.z tailarea.t 
 #' @usage 
-#'        mata.wald(theta.hats, se.theta.hats, model.weights, normal.lm=FALSE, residual.dfs=0, alpha=0.025)
+#'        mata.wald(theta.hats, se.theta.hats, model.weights, normal.lm=FALSE, 
+#'                           residual.dfs=0, alpha=0.025)
 #'  
 #'        tailarea.z(theta, theta.hats, se.theta.hats, model.weights, alpha)
 #' 
@@ -103,7 +104,7 @@
 mata.wald = function(theta.hats, se.theta.hats, model.weights, normal.lm=FALSE, residual.dfs=0, alpha=0.025) {
 	if(length(theta.hats) != length(se.theta.hats))    stop('dimension mismatch in arguments')
 	if(length(theta.hats) != length(model.weights))    stop('dimension mismatch in arguments')
-	if(any(se.theta.hats <= 0))                        stop('negative \'se.theta.hats\'')
+	if(any(se.theta.hats < 0))                        stop('negative \'se.theta.hats\'')
 	if(any(model.weights < 0))                         stop('negative \'model.weights\'')
 	if(abs(sum(model.weights)-1) > 0.001)              stop('\'model.weights\' do not sum to 1')
 	if(!is.logical(normal.lm))                         stop('\'normal.lm\' must be logical (T/F)')
