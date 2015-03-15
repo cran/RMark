@@ -72,6 +72,7 @@
 #' @keywords utility
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # MARK example input file
 #' pathtodata=paste(path.package("RMark"),"extdata",sep="/")
 #' dipper=convert.inp(paste(pathtodata,"dipper",sep="/"),
@@ -90,7 +91,7 @@
 #' clogit_demo=convert.inp(paste(pathtodata,"clogit_demo",sep="/"))
 #' deer=convert.inp(paste(pathtodata,"deer",sep="/"))
 #' ed_males=convert.inp(paste(pathtodata,"ed_males",sep="/"))
-#' F_age=convert.inp(paste(pathtodata,"F_age",sep="/"))
+#' F_age=convert.inp(paste(pathtodata,"f_age",sep="/"))
 #' indcov1=convert.inp(paste(pathtodata,"indcov1",sep="/"),
 #'          covariates=c("cov1","cov2"))
 #' indcov2=convert.inp(paste(pathtodata,"indcov2",sep="/"),
@@ -108,7 +109,7 @@
 #' multigroup=convert.inp(paste(pathtodata,"multi_group",sep="/"),
 #'             group.df=data.frame(sex=c(rep("Female",2),rep("Male",2)),
 #'             Colony=rep(c("Good","Poor"),2)))
-#' LD1=convert.inp(paste(pathtodata,"LD1",sep="/"),
+#' LD1=convert.inp(paste(pathtodata,"ld1",sep="/"),
 #'            group.df=data.frame(age=c("Young","Adult")))
 #' yngadt=convert.inp(paste(pathtodata,"yngadt",sep="/"),
 #'             group.df=data.frame(age=c("Young","Adult")))
@@ -227,6 +228,18 @@ convert.inp=function(inp.filename,group.df=NULL,covariates=NULL,use.comments=FAL
 #' @keywords utility
 strip.comments=function(inp.filename,use.comments=TRUE,header=TRUE)
 {
+   if(!substr(inp.filename,1,4)=="http")
+   {
+	   if(!file.exists(inp.filename))
+	   {
+		   inp.filename=paste(inp.filename,".inp",sep="")
+		   if(!file.exists(inp.filename))
+		   {
+			   cat("\nCannot find input file. Make sure filename is correct.\n")
+			   stop()
+		   }
+	   }
+   }
 #
 #  Read in file and strip out comments and blank lines
 #

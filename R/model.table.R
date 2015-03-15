@@ -43,6 +43,7 @@
 #' @seealso \code{\link{collect.model.names}}, \code{\link{collect.models}}
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(dipper)
 #' run.dipper=function()
 #' {
@@ -183,7 +184,7 @@ for(i in 1:length(model.list))
       model = eval(parse(text = paste("load.model(",model.list[i],")")), envir = model.table)
    if(is.null(model$result))
    {
-        message(paste("Model ",i,": ",model.list[i]," has not been run.\n",sep=""))
+        message(paste("Model ",i,": ",model.list[i]," failed to run.\n",sep=""))
         next
    }
    param.names=names(setup.parameters(model$model))

@@ -19,6 +19,7 @@
 #' @examples
 #' \donttest{
 #' 
+#' # This example is excluded from testing to reduce package check time
 #'# Create dataframe
 #'data(LASP)
 #' mscale=LASP
@@ -137,6 +138,7 @@ NULL
 #' @examples
 #' # brownie=import.chdata("brownie.inp",field.types=c("n","f"))
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #'  data(brownie)
 #' # default ordering of ReleaseAge is alphabetic so it is 
 #' # Adult, Young which is why initial.ages=c(1,0)
@@ -246,7 +248,7 @@ NULL
 #' #
 #' model.list=create.model.list("Known")
 #' bduck.results=mark.wrapper(model.list,data=bduck.processed,ddl=bduck.ddl,
-#'                invisible=FALSE,threads=2)
+#'                invisible=FALSE,threads=1)
 #' 
 #' #
 #' # Return model table and list of models
@@ -319,6 +321,7 @@ NULL
 #' @examples 
 #' 
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(deer)
 #' x=data.frame(ch=paste(deer$TI, deer$SL, sep=""), Survey=factor(deer$Group), 
 #'      Year=factor(deer$Year), Cluster=deer$Cluster, MgtUnit=factor(deer$MgmtUnit))
@@ -393,17 +396,12 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' #Script to simulate the MSCRD 
 #' #example of 15.7.1 from the MARK
 #' #book
 #' #created by AJP 21 Dec 2010
 #' 
-#' #cleanup the R environment
-#' graphics.off()
-#' rm(list=ls())
-#' 
-#' #cleanup files
-#' cleanup(ask=FALSE)
 #' 
 #' #convert .inp data - only needed to create crdms
 #' #ch.data<-convert.inp("rd_simple1.inp")
@@ -432,7 +430,8 @@ NULL
 #' #variable is called ctime for constrained time
 #' crdms.ddl$Psi$ctime=crdms.ddl$Psi$time
 #' crdms.ddl$Psi$ctime[crdms.ddl$Psi$time==3]=2
-#' 
+#' do_example=function()
+#' {
 #' #Initial assumptions
 #' S.dot=list(formula=~1)  #S equal for both states and constant over time
 #' p.session=list(formula=~session, share=TRUE,  #p=c varies with session 
@@ -464,9 +463,9 @@ NULL
 #' crdms.res<-collect.models()
 #' 
 #' print(crdms.res)
-#' 
-#' #final cleanup
-#' cleanup(ask=FALSE)
+#' invisible()
+#' }
+#' do_example()
 #' }
 NULL
 
@@ -527,6 +526,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(dipper)
 #' dipper.model=mark(dipper)
 #' run.dipper=function()
@@ -799,7 +799,7 @@ NULL
 #' developed by Donovan and Hines.
 #' 
 #' This is a data set from exercise 7 of Donovan and Hines occupancy web site
-#' (\url{http://www.uvm.edu/envnr/vtcfwru/spreadsheets/occupancy/occupancy.htm}).
+#' (\url{http://www.uvm.edu/rsenr/vtcfwru/spreadsheets/?Page=occupancy/occupancy.htm}).
 #' 
 #' @name Donovan.7
 #' @docType data
@@ -819,9 +819,9 @@ NULL
 #' # Estimates from following agree with estimates on website but the
 #' # log-likelihood values do not agree.  Maybe a difference in whether the
 #' # constant binomial coefficients are included.
-#'   Donovan.7.poisson=mark(Donovan.7,model="OccupRNPoisson",invisible=FALSE,threads=2)
+#'   Donovan.7.poisson=mark(Donovan.7,model="OccupRNPoisson",invisible=FALSE,threads=1)
 #' # THe following model was not in exercise 7.
-#'   Donovan.7.negbin=mark(Donovan.7,model="OccupRNNegBin",invisible=FALSE,threads=2)
+#'   Donovan.7.negbin=mark(Donovan.7,model="OccupRNNegBin",invisible=FALSE,threads=1)
 #'   return(collect.models())
 #' }
 #' exercise.7=do.exercise.7()
@@ -842,7 +842,7 @@ NULL
 #' developed by Donovan and Hines.
 #' 
 #' This is a data set from exercise 8 of Donovan and Hines occupancy web site
-#' (\url{http://www.uvm.edu/envnr/vtcfwru/spreadsheets/occupancy/occupancy.htm}).
+#' (\url{http://www.uvm.edu/rsenr/vtcfwru/spreadsheets/?Page=occupancy/occupancy.htm}).
 #' In MARK, it uses 2 digits to allow a count of 0 to 99 at each site, so the
 #' history has 10 digits for 5 visits (occasions).
 #' 
@@ -855,6 +855,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # Donovan.8 can be created with
 #' # Donovan.8=convert.inp("Donovan.8.inp")
 #' do.exercise.8=function()
@@ -903,6 +904,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' #
 #' # get data
 #' #
@@ -1001,6 +1003,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(example.data)
 #' run.example=function()
 #' {
@@ -1050,6 +1053,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(IELogitNormalMR)
 #' IElogitNor.proc=process.data(IELogitNormalMR,model="IELogitNormalMR",
 #' 	counts=list("Marked Superpopulation"=c(28, 29, 30, 30, 30, 33, 33, 33, 33, 34, 34, 34),
@@ -1064,15 +1068,15 @@ NULL
 #' 							  Nstar=list(formula=~session),
 #' 							  Nbar=list(formula=~session)))
 #' summary(mod1)
-#' 
-#' mod2=mark(IElogitNor.proc,IElogitNor.ddl,
+#' # You can use the initial value to get a better estimate.
+#'  mod2=mark(IElogitNor.proc,IElogitNor.ddl,
 #' 		  model.parameters=list(p=list(formula=~-1+session:time),
 #' 							  sigma=list(formula=~session),
 #' 							  alpha=list(formula=~-1+session:time),
 #' 							  Nstar=list(formula=~session),
 #' 							  Nbar=list(formula=~session)),
 #' 							  initial=mod1)
-#' summary(mod2)			  
+#'  summary(mod2)			  
 #' }
 NULL
 
@@ -1118,6 +1122,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # EXAMPLE CODE FOR CONVERSION OF .INP TO NECESSARY DATA STRUCTURE
 #' # read in killdeer.inp file
 #' #killdeer=scan("killdeer.inp",what="character",sep="\n")
@@ -1173,7 +1178,7 @@ NULL
 #' 				    "Marked Unidentified"=c(0,0,0,0,1,1,1,0,0,3,0,1)),
 #' 			         time.intervals=c(0,0,0,1,0,0,0,1,0,0,0))
 #' logitNor.ddl=make.design.data(logitNor.proc)
-#' mod=mark(logitNor.proc,logitNor.ddl,threads=2)
+#' mod=mark(logitNor.proc,logitNor.ddl,threads=1)
 #' summary(mod)
 #' 
 NULL
@@ -1249,6 +1254,7 @@ NULL
 #'#   Animal Biodiversity and Conservation 27:187-204.          #
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' require(RMark)
 #'
 #'# Retrieve data
@@ -1325,7 +1331,7 @@ NULL
 #'mallard.results                        # print model-selection table to screen
 #'options(width=100)                     # set page width to 100 characters
 #'sink("results.table.txt")              # capture screen output to file
-#'print.marklist(mallard.results)        # send output to file
+#'print(mallard.results)                 # send output to file
 #'sink()                                 # return output to screen
 #'
 #'# remove "#" on next line to see output in notepad                                            
@@ -1444,6 +1450,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #'  \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(mstrata)
 #' run.mstrata=function()
 #' {
@@ -1477,19 +1484,17 @@ NULL
 #' #  stratum.
 #' #
 #' Psi.s=list(formula=~-1+stratum:tostratum)
-#' Psi.sxtime=list(formula=~-1+stratum:tostratum:time)
 #' #
 #' # Create model list and run assortment of models
 #' #
 #' model.list=create.model.list("Multistrata")
 #' #
-#' # Add on specific models that are paired with fixed p's to remove confounding
+#' # Add on specific model that is paired with fixed p's to remove confounding
 #' #
 #' p.stratumxtime=list(formula=~stratum*time)
 #' p.stratumxtime.fixed=list(formula=~stratum*time,fixed=list(time=4,value=1))
 #' model.list=rbind(model.list,c(S="S.stratumxtime",p="p.stratumxtime.fixed",
-#'   Psi="Psi.sxtime"))
-#' model.list=rbind(model.list,c(S="S.stratum",p="p.stratumxtime",Psi="Psi.s"))
+#'   Psi="Psi.s"))
 #' #
 #' # Run the list of models
 #' #
@@ -1538,6 +1543,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # To create the data file use:
 #' # NicholsMSOccupancy=convert.inp("NicholsMSOccupancy.inp")
 #' #
@@ -1608,6 +1614,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #'  \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(Poisson_twoMR)
 #' pois.proc=process.data(Poisson_twoMR,model="PoissonMR",groups="pg",
 #' 		counts=list("Unmarked Seen"=matrix(c(1237,588),nrow=2,ncol=1),
@@ -1639,6 +1646,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(PoissonMR)
 #' pois.proc=process.data(PoissonMR,model="PoissonMR",
 #' 		counts=list("Unmarked Seen"=c(1380, 1120, 1041, 948),
@@ -1790,6 +1798,7 @@ NULL
 #' @examples
 #'
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(RDOccupancy)
 #' #
 #' # Example of epsilon=1-gamma
@@ -1900,7 +1909,7 @@ NULL
 #' sink("results.table.txt") # Captures screen output to file
 #'
 #' # Remove comment to see output
-#' #print.marklist(robustexample) # Sends output to file
+#' #print(robustexample) # Sends output to file
 #' sink() # Returns output to screen
 #' #
 #' # Allows you to view results in notepad;remove # to see output
@@ -1996,6 +2005,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' fit.RDOccupancy=function()
 #' {
 #'    data(RDSalamander)
@@ -2051,6 +2061,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(robust)
 #' run.robust=function()
 #' {
@@ -2203,6 +2214,7 @@ NULL
 #' @keywords datasets
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' do.salamander=function()
 #' {
 #'    data(salamander)
@@ -2257,6 +2269,7 @@ NULL
 #' #0000.	0	1	3	2	3	.
 #' #
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # retrieve weta data
 #' data(weta)
 #' # Create function to fit the 18 models in the book
@@ -2368,6 +2381,7 @@ NULL
 #' @examples
 #' 
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' data(wwdo.09)
 #' wwdo=wwdo.09
 #' wwdo.popan=function(){

@@ -1,3 +1,38 @@
+RMark 2.1.12 (12 Mar 2015)
+--------------------------
+BUG FIXES
+* Changed names of inp files to be all lower case to avoid problems on non-windows machines
+
+* Incomplete reading of derived parameters has been fixed.  Models that have parameter f0 now have a derived parameter for N. 
+
+CHANGES 
+* added code to release.gof and mark.wrapper.parallel to return NULL if run on a non-windows machine
+
+RMark 2.1.11 (10 Mar 2015)
+--------------------------
+BUG FIXES
+* Fixed bad url in description
+
+CHANGES 
+* set threads=1 for any example that is tested on CRAN.
+
+RMark 2.1.10 (10 Mar 2015)
+--------------------------
+NEW FEATURES
+* added argument icvalues to mark and make.mark.model so individual covariate values can be specified in inp file for mark.exe to calculate real parameter values. Most useful in combination with setting of profile likelihood intervals.
+
+CHANGES 
+* code was added to popan.derived to provide cumulative summation of B_Gross over time for each occasion and its v-c matrix. The last occasion for each group is NGross for that group.
+* extract.mark.output, mark, run.mark.model, mark.wrapper, and mark.wrapper.parallel were modified so that all messages are suppressed when silent=TRUE and if there was an error with the MARK run it does not pop open editor with the output file.
+* strata.labels are checked to make sure that they are all single characters
+* added explicit test to make sure file exists in import.chdata and convert.inp
+* added checks to make.mark.model. If design data rows have been deleted a warning is given with directions to read the message in make.design.data. Also, the code checks to make sure the rows are in their proper order. If they are, the code stops.
+
+BUG FIXES
+* popan.derived was not handling loss on captures correctly because it was summing frequencies without taking absolute values. This was fixed in this version.
+* bug in process.data was fixed which was incorrectly not allowing "2" in the capture history for some of the RBBarker models. Thanks to Thomas Riecke for finding and reporting the bug.
+* bug in covariate.predictions was fixed in mlogit parameters were not handled correctly when multiple covariate values were provided. Thanks to Koen van Benthem for noticing that real parameter values for mlogits changed if more than one covariate value was given.
+
 RMark 2.1.9 (6 Oct 2014)
 --------------------------
 CHANGES 
@@ -6,6 +41,7 @@ CHANGES
 BUG FIXES
 * Excepted mark-resight LogitNormal from check on all 0 capture histories because they are allowed for those models. Thanks to Brian Taras for pointing out the problem.
 * Fixed bug in make.mark.model which could be fooled by when "initial " was found in a formula and it was expecting initial parameter values. Thanks to Christian Kampichler for pointing out the problem.
+
 
 RMark 2.1.8 (26 June 2014)
 --------------------------

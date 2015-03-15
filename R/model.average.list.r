@@ -31,7 +31,7 @@
 #' 
 #' @usage \method{model.average}{list}(x, revised=TRUE, mata=FALSE, normal.lm=FALSE, 
 #'                                        residual.dfs=0, alpha=0.025,...)
-#' @export model.average.list
+#' @export 
 #' @param x a list containing the following elements: 1) \code{estimate} - a
 #' vector or matrix of estimates, 2)a vector of model selection criterion value
 #' named \code{AIC,AICc,QAIC,QAICc} or a \code{weight} variable that sums to 1
@@ -68,6 +68,7 @@
 #' @keywords utility
 #' @examples
 #' \donttest{
+#' # This example is excluded from testing to reduce package check time
 #' # Create a set of models from dipper data
 #' data(dipper)
 #' run.dipper=function()
