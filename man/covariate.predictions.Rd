@@ -13,7 +13,9 @@ covariate.predictions(model, data = NULL, indices = NULL, drop = TRUE,
 
 \item{data}{dataframe with covariate values used for estimates; if it
 contains a field called index the covariates in each row are only applied to
-the parameter with that index and the argument indices is not needed}
+the parameter with that index and the argument indices is not needed; if data is not specified or
+all individual covariate values are not specified, the mean individual covariate value is
+used for prediction.}
 
 \item{indices}{a vector of indices from the all-different PIM structure for
 parameters to be computed}
@@ -117,7 +119,13 @@ values, you could create a dataframe with 5 rows each having an \code{index}
 with the value 1 along with the relevant covariate data and an additional 2
 rows with the \code{index} with the value 7.  If you include the field
 \code{index} in \code{data} then you do not need to give a value for the
-argument \code{indices}.
+argument \code{indices}. However, if you are making the computations for parameters
+that use an mlogit link you must use the separate indices argument. If you try to
+use the data.frame(index=...,cov) approach with mlogit parameters and you have
+covariate values, the function will stop with an error.  Also, if you only include
+a portion of the indices in an mlogit set, it will also stop and issue an error and
+tell you the set of indices that should be included for that mlogit set.  If you
+were allowed to exclude some indices the result would be incorrect.
 }
 \examples{
 pathtodata=paste(path.package("RMark"),"extdata",sep="/")

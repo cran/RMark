@@ -1,3 +1,25 @@
+RMark 2.1.13 (3 June 2015)
+--------------------------
+CHANGES
+
+* Thanks to Ben Cox who profiled the code which helped me make a change that significantly speeds up writing of input files with large data. As part of that changed I added an argument wrap which defaults to TRUE. If you have large data sets where each record is less than 255 characters set wrap=FALSE.
+
+* covariate.predictions was changed so that the argument data is not required. If the model has covariates and values are not provided in the data argument, the mean covariate value is used for predictions.
+
+BUG FIXES
+
+* The function restore is now explicitly exported.
+
+* A bug in covariate.predictions was introduced in the change for 2.1.10.  Incorrect values were being computed for mlogit parameters when covariate values were not used.  popan.derived used that approach and incorrect values resulted for the abundance estimates. Thanks to Leigh Ann Starcevich for reporting this discrepancy. A few other changes were made in covariate.predictions to prevent possible errors with mlogit parameters. If you are making the computations for parameters that use an mlogit link you must use the separate indices argument if you have individual covariate values. If you try to use the data=data.frame(index=...,cov=) approach with mlogit parameters and you have covariate values, the function will stop with an error.   Also, if you only include a portion of the indices in an mlogit set, it will also stop and issue an error and will tell you the set of indices that should be included for that mlogit set.  If you were allowed to exclude some indices the result would be incorrect because the real parameter values are computed by summing over the entire mlogit set.
+
+* A bug in process.data was fixed that would incorrectly state that the robust structure was not correct in some cases with non-unit time intervals.  Thanks to Tomo Eguchi for finding and reporting this error.
+
+* A problem with reading singular parameters from the output file was fixed.  These are the parameter indices that MARK identified and are stored in results$singular.
+
+* A bug was fixed in model.table in which it would not complete if the first model failed to run.
+
+* Real labels had 2 values of c (cohort) based on time and occasion. This was fixed.
+
 RMark 2.1.12 (12 Mar 2015)
 --------------------------
 BUG FIXES

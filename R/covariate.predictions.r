@@ -65,12 +65,20 @@
 #' with the value 1 along with the relevant covariate data and an additional 2
 #' rows with the \code{index} with the value 7.  If you include the field
 #' \code{index} in \code{data} then you do not need to give a value for the
-#' argument \code{indices}.
+#' argument \code{indices}. However, if you are making the computations for parameters 
+#' that use an mlogit link you must use the separate indices argument. If you try to
+#' use the data.frame(index=...,cov) approach with mlogit parameters and you have
+#' covariate values, the function will stop with an error.  Also, if you only include 
+#' a portion of the indices in an mlogit set, it will also stop and issue an error and
+#' tell you the set of indices that should be included for that mlogit set.  If you
+#' were allowed to exclude some indices the result would be incorrect. 
 #' 
 #' @param model MARK model object or marklist
 #' @param data dataframe with covariate values used for estimates; if it
 #' contains a field called index the covariates in each row are only applied to
-#' the parameter with that index and the argument indices is not needed
+#' the parameter with that index and the argument indices is not needed; if data is not specified or
+#' all individual covariate values are not specified, the mean individual covariate value is
+#' used for prediction.
 #' @param indices a vector of indices from the all-different PIM structure for
 #' parameters to be computed
 #' @param drop if TRUE, models with any non-positive variance for betas are
@@ -296,23 +304,23 @@ covariate.predictions <- function(model,data=NULL,indices=NULL,drop=TRUE, revise
 #   vcv              - variance-covariance matrix of real estimates
 #
 # ------------------------------------------------------------------------------------------------
-if(class(model)[1]!="marklist")
-{
-  number.of.models=1
-  model=load.model(model)
-  model.list=list(model)
-}
-else
-{
-  number.of.models=length(model)-1
-  if(is.null(model$model.table))
-     stop("\nmarklist created by collect.models must contain a model.table to use model.average\n")
-  model.list=model
-  model.table=model$model.table
-}
-   if(is.null(data))
-      stop("\n data argument must be specified\n")
-   if(!is.data.frame(data))
+   if(class(model)[1]!="marklist")
+   {
+     number.of.models=1
+     model=load.model(model)
+     model.list=list(model)
+   }
+   else
+   {
+     number.of.models=length(model)-1
+     if(is.null(model$model.table))
+        stop("\nmarklist created by collect.models must contain a model.table to use model.average\n")
+     model.list=model
+     model.table=model$model.table
+   }
+#   if(is.null(data))
+#      stop("\n data argument must be specified\n")
+   if(!is.null(data)&!is.data.frame(data))
       stop("\n data argument must be a dataframe. Do not use processed data list.\n")
 #
 #   If there is an index field in data, then only use that row of data for that index
@@ -324,10 +332,20 @@ else
       indices=index
       replicate.values=FALSE
    }
-   else
-      replicate.values=TRUE
-   if(is.null(indices))
-     stop("\nValue for indices argument must be given or index field must be included in data argument\n")
+   else {
+	   if(!is.null(data))
+		   replicate.values=TRUE
+	   else{
+		   replicate.values=FALSE
+		   if(is.null(indices))
+			   stop("\nValue for indices argument must be given or index field must be included in data argument\n")
+		   else
+		   {
+			   data=data.frame(index=indices)
+			   index=indices
+		   }
+	   }
+   }
 #
 # Determine if any of the models should be dropped because beta.var non-positive
 #
@@ -364,7 +382,7 @@ else
 	if(any(diag(model$results$beta.vcv[used.beta,used.beta])<0))
 		message("\nModel has one or more beta variances that are not positive\n")
 }
-  dropped.models=NULL
+dropped.models=NULL
 reals=vector("list",length=number.of.models)
 firstmodel=TRUE
 for (j in 1:number.of.models)
@@ -385,11 +403,12 @@ for (j in 1:number.of.models)
    fixedparms=NULL
    boundaryparms=NULL
 #   
-#  If there are no data values other than the index, the code below will extract only those
+#  If there are no individual covariates in the model, the code below will extract only those
 #  rows in the DM.  
 #
    nmlogit=0
-   if(ncol(data)==1 && names(data)=="index")
+   if(is.null(model$covariates)&ncol(data)==1 && names(data)=="index")
+#   if(ncol(data)==1 && names(data)=="index")
    {
      for (i in 1:nrow(data))
      {
@@ -398,20 +417,7 @@ for (j in 1:number.of.models)
         if(length(model$links)==1)
            links=c(links,model$links)
         else
-		{
-			clinks=model$links[model.index]
-			mlinks=substr(clinks,1,6)=="mlogit"
-            if(any(mlinks))
-			{
-				mlogit.list=split(1:length(clinks[mlinks]),clinks[mlinks])
-				for(i in 1:length(mlogit.list))
-				{
-					nmlogit=nmlogit+1
-					clinks[mlinks][mlogit.list[[i]]]=paste("mlogit(",nmlogit,")",sep="")
-				}
-			}	
-			links=c(links,clinks)		
-		}
+		   links=c(links,model$links[model.index])	
         if(!is.null(model$fixed))
         {
            if(is.null(model$simplify))
@@ -424,6 +430,16 @@ for (j in 1:number.of.models)
         fixedparms=c(fixedparms,xfixedparms[model.index])
         boundaryparms=c(boundaryparms,(model$results$real$se==0 & !xfixedparms)[model.index])
      }
+	 mlinks=substr(links,1,6)=="mlogit"
+	 if(any(mlinks))
+	 {
+		 mlogit.list=split(1:length(links[mlinks]),links[mlinks])
+		 for(i in 1:length(mlogit.list))
+		 {
+			 if(any(!which(model$links==names(mlogit.list)[i])%in%model.indices)) stop(paste("\n some indices are missing for parameters with",
+								 names(mlogit.list)[i],"\n should include",paste(which(model$simplify$pim.translation%in%which(model$links==names(mlogit.list)[i])),collapse=",")))
+		 }
+	 }
    }
    else
 # If there are data values for covariates then it fills in a complete DM for each record in the data
@@ -446,9 +462,13 @@ for (j in 1:number.of.models)
 			mlinks=substr(clinks,1,6)=="mlogit"
 			if(any(mlinks))
 			{
+				if(!replicate.values) 
+					stop("Computations for mlogit parameters with covariate values cannot be specified with \nindex column in data; use separate indices argument" )
 				mlogit.list=split(1:length(clinks[mlinks]),clinks[mlinks])
 				for(i in 1:length(mlogit.list))
 				{
+					if(any(!which(model$links==names(mlogit.list)[i])%in%model.indices)) stop(paste("\n some indices are missing for parameters with",
+										names(mlogit.list)[i],"\n should include",paste(which(model$simplify$pim.translation%in%which(model$links==names(mlogit.list)[i])),collapse=",")))
 					nmlogit=nmlogit+1
 					clinks[mlinks][mlogit.list[[i]]]=paste("mlogit(",nmlogit,")",sep="")
 				}
