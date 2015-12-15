@@ -1,3 +1,185 @@
+#' An example of the Mulstistrata (multi-state) model in which states are routes taken by migrating fish.
+#' 
+#' @name skagit
+#' @author Megan Moore <megan.moore at noaa.gov> 
+#' @examples
+#'# There are just two states which correspond to route A and route B. There are 6 occasions
+#'# which are the locations rather than times. After release at 1=A there is no movement 
+#'# between states for the first segment, fish are migrating downriver together and all pass 2A. 
+#'# Then after occasion 2, migrants go down the North Fork (3A) or the South Fork (3B), 
+#'# which both empty into Skagit Bay. Once in saltwater, they can go north to Deception Pass (4A)
+#'# or South to a receiver array exiting South Skagit Bay (4B). Fish in route A can then only go
+#'# to the Strait of Juan de Fuca, while fish in route B must pass by Admiralty Inlet (5B). 
+#'# Then both routes end with the array at the Strait of Juan de Fuca.
+#'#
+#'#       1A
+#'#        |
+#'#        2A
+#'#      /     \
+#'#    3A        3B
+#'#   /  \      /  \ 
+#'# 4A   4B    4A  4B       
+#'#  |     \    /   |
+#'#   5A    5B  5A   5B
+#'#      \   \   /    /
+#'#            6
+#'# 
+#'# from 3A and 3B they can branch to either 4A or 4B; branches merge at 6  
+#'# 5A does not exist so p=0; only survival from 4A to 6 can be 
+#'# estimated which is done by setting survival from 4A to 5A to 1 and
+#'# estimating survival from 5A to 6 which is then total survival from 4A to 6.
+#'\donttest{
+#'pathtodata=paste(path.package("RMark"),"extdata",sep="/")
+#'skagit=import.chdata(paste(pathtodata,"skagit.txt",sep="/"),field.types=c("f"),header=TRUE)
+#'skagit.processed=process.data(skagit,model="Multistrata",groups=c("tag"))
+#'skagit.ddl=make.design.data(skagit.processed)
+#'#
+#'# p
+#'#
+#'# Can't be seen at 5A or 2B,6B (the latter 2 don't exist)
+#'skagit.ddl$p$fix=ifelse((skagit.ddl$p$stratum=="A"&skagit.ddl$p$time==5) | 
+#'  (skagit.ddl$p$stratum=="B"&skagit.ddl$p$time%in%c(2,6)),0,NA)
+#'# Estimated externally from current data to allow estimation of survival at last interval
+#'skagit.ddl$p$fix[skagit.ddl$p$tag=="v7"&skagit.ddl$p$time==6&skagit.ddl$p$stratum=="A"]=0.687
+#'skagit.ddl$p$fix[skagit.ddl$p$tag=="v9"&skagit.ddl$p$time==6&skagit.ddl$p$stratum=="A"]=0.975
+#'#
+#'# Psi
+#'#
+#'# only 3 possible transitions are A to B at time interval 2 to 3 and 
+#'# for time interval 3 to 4 from A to B and from B to A
+#'# rest are fixed values
+#'skagit.ddl$Psi$fix=NA
+#'# stay in A for intervals 1-2, 4-5 and 5-6
+#'skagit.ddl$Psi$fix[skagit.ddl$Psi$stratum=="A"&
+#'   skagit.ddl$Psi$tostratum=="B"&skagit.ddl$Psi$time%in%c(1,4,5)]=0
+#'# stay in B for interval 4-5
+#'skagit.ddl$Psi$fix[skagit.ddl$Psi$stratum=="B"&skagit.ddl$Psi$tostratum=="A"
+#'   &skagit.ddl$Psi$time==4]=0
+#'# leave B to go to A for interval 5-6
+#'skagit.ddl$Psi$fix[skagit.ddl$Psi$stratum=="B"&skagit.ddl$Psi$tostratum=="A"&
+#'  skagit.ddl$Psi$time==5]=1
+#'# "stay" in B for interval 1-2 and 2-3 because none will be in B
+#'skagit.ddl$Psi$fix[skagit.ddl$Psi$stratum=="B"&skagit.ddl$Psi$tostratum=="A"&
+#'  skagit.ddl$Psi$time%in%1:2]=0
+#'# 
+#'# S
+#'#
+#'# None in B, so fixing S to 1
+#'skagit.ddl$S$fix=ifelse(skagit.ddl$S$stratum=="B"&skagit.ddl$S$time%in%c(1,2),1,NA)
+#'skagit.ddl$S$fix[skagit.ddl$S$stratum=="A"&skagit.ddl$S$time==4]=1
+#'# fit model
+#'p.timexstratum.tag=list(formula=~time:stratum+tag,remove.intercept=TRUE)
+#'Psi.sxtime=list(formula=~-1+stratum:time)
+#'S.stratumxtime=list(formula=~-1+stratum:time)
+#'#
+#'S.timexstratum.p.timexstratum.Psi.sxtime=mark(skagit.processed,skagit.ddl,
+#'  model.parameters=list(S=S.stratumxtime,p= p.timexstratum.tag,Psi=Psi.sxtime))
+#'# calculation of cummulative survival for entire route
+#'Sest=plogis(coef(S.timexstratum.p.timexstratum.Psi.sxtime)$estimate)
+#'# A
+#'prod(Sest[c(1:3,6)])
+#'#[1] 0.1644
+#'# B
+#'prod(Sest[c(1,2,4,5,7)])
+#'#[1] 0.1154
+#' }
+
+NULL
+
+#' #' Burnham Live-Dead Model
+#' 
+#' An example of the Burnham live-dead model using simulated data LD1.inp from Chapter 9 of Cooch and White
+#' 
+#' @name Burnham
+#' @author Luke Eberhart-Phillips<luke.eberhart at gmail.com> 
+#' @examples
+#' \donttest{
+#'###############################################################################
+#'#### RMARK script for conducting the Burnham model tutorial in Chapter 9.3 ####
+#'#################### the of the Cooch and White MARK book #####################
+#'###############################################################################
+#'##################### Code by: Luke Eberhart-Phillips #########################
+#'###### Dept. Animal Behaviour, Bielefeld University, Bielefeld, Germany #######
+#'##################### email: luke.eberhart at gmail.com ##########################
+#'###############################################################################
+#'
+#'# import/convert the simulated "LD1.inp" MARK capture history into an RMARK 
+#'# dataframe, while defining the two groups as "Y" for individuals marked as 
+#'# young, and "A" for individuals marked as adults
+#'# NOTE: the "LD1.inp" file is found in the zipped folder downloaded when you
+#'# click on "Example data files" in the drop-down menu of the MARK book webpage
+#'# (http://www.phidot.org/software/mark/docs/book/)
+#' pathtodata=paste(path.package("RMark"),"extdata",sep="/")
+#' LD=convert.inp(paste(pathtodata,"ld1",sep="/"),
+#'            group.df=data.frame(age_marked=c("Y","A")))
+#'# process the data by defining the model type as "Burnham" and the groups in
+#'# the data.  In this case the only group is the age at which individuals were 
+#'# marked
+#'LD.proc=process.data(data = LD, 
+#'		model = "Burnham",
+#'		groups=c("age_marked"),
+#'		age.var=1,
+#'		initial.age=c(1,0))
+#'
+#'# make the design data from the process data above
+#'LD.ddl=make.design.data(LD.proc)
+#'
+#'# add the correct binning to the design data so that individuals that were
+#'# marked as young are adults in their second year of life, where as those
+#'# marked as adults are adults for their entire life.
+#'LD.ddl=add.design.data(data = LD.proc,
+#'		ddl = LD.ddl,
+#'		parameter="S", 
+#'		type = "age",
+#'		bins = c(0,1,8),
+#'		right = FALSE,
+#'		name = "age",
+#'		replace = TRUE)
+#'
+#'# do the same to the F parameter
+#'LD.ddl=add.design.data(data = LD.proc,
+#'		ddl = LD.ddl,
+#'		parameter="F", 
+#'		type = "age",
+#'		bins = c(0,1,8),
+#'		right = FALSE,
+#'		name = "age",
+#'		replace = TRUE)
+#'
+#'# check parameter matrix to see if groups were binned correctly in the S matrix
+#'PIMS(mark(data = LD.proc,
+#'				ddl = LD.ddl,
+#'				model.parameters=list(S=list(formula=~age)),
+#'				output=FALSE,
+#'				model = "Burnham"),
+#'		"S")
+#'
+#'# Create the formulas that describe variation in the parameter we want to test.
+#'# In this case we want to test for an age effect on survival and fidelity,
+#'# while keeping recapture and recovery probabilities constant.
+#'S.age=list(formula=~age) # S(age)
+#'p.dot=list(formula=~1) # p(.)
+#'F.age=list(formula=~age) # F(age)
+#'r.dot=list(formula=~1) # r(.)
+#'
+#'# Run the model
+#'LD.model.age.F.S=mark(data = LD.proc,
+#'		ddl = LD.ddl, 
+#'		model.parameters = list(S = S.age, p = p.dot, 
+#'				F =F.age, r = r.dot), 
+#'		invisible = FALSE, 
+#'		model = "Burnham")
+#'
+#'# Check the paramter estimates, they should be the same as those generated
+#'# when doing the tutorial in chapter 9.3 of the in MARK Book (table on pg 9-8)
+#'LD.model.age.F.S$results$real
+#'
+#'# Clean your working directory
+#'cleanup(ask=FALSE)
+#'}
+
+NULL
+
 #' Lark Sparrow
 #' 
 #' An example of Multiple Scale Occupancy model for some lark sparrow data that was contributed by David Pavlacky 

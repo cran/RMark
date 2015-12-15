@@ -5,7 +5,8 @@
 \title{Extract or compute sets of real parameters}
 \usage{
 get.real(model, parameter, beta = NULL, se = FALSE, design = NULL,
-  data = NULL, vcv = FALSE, show.fixed = TRUE, expand = FALSE)
+  data = NULL, vcv = FALSE, show.fixed = TRUE, expand = FALSE,
+  pim = TRUE)
 }
 \arguments{
 \item{model}{MARK model object}
@@ -30,6 +31,8 @@ of fixed values}
 
 \item{expand}{if TRUE, returns vcv matrix for unique parameters and only
 simplified unique parameters if FALSE}
+
+\item{pim}{if TRUE and se=FALSE, returns a list of estimates in PIM format}
 }
 \value{
 estimates: if \code{se=FALSE and Beta=NULL}, a matrix of estimates
@@ -53,7 +56,7 @@ manipulation or plotting etc.  It is closely related to
 extract/compute real estimates of a particular type (\code{parameter}).
 
 The real parameter estimates are computed when either 1) \code{model$chat} >
-1, 2) \code{design}, \code{data}, or \code{beta} are are specified with
+1, 2) \code{design}, \code{data}, or \code{beta} are specified with
 non-NULL values for those arguments, or 3) vcv=TRUE.  If none of the above
 hold, then the estimates are extracted.
 
