@@ -22,7 +22,7 @@ An example of the Burnham live-dead model using simulated data LD1.inp from Chap
 # young, and "A" for individuals marked as adults
 # NOTE: the "LD1.inp" file is found in the zipped folder downloaded when you
 # click on "Example data files" in the drop-down menu of the MARK book webpage
-# (http://www.phidot.org/software/mark/docs/book/)
+#  \\url{http://www.phidot.org/software/mark/docs/book/}
 pathtodata=paste(path.package("RMark"),"extdata",sep="/")
 LD=convert.inp(paste(pathtodata,"ld1",sep="/"),
            group.df=data.frame(age_marked=c("Y","A")))

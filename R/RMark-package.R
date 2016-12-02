@@ -108,7 +108,7 @@ NULL
 #'# young, and "A" for individuals marked as adults
 #'# NOTE: the "LD1.inp" file is found in the zipped folder downloaded when you
 #'# click on "Example data files" in the drop-down menu of the MARK book webpage
-#'# (http://www.phidot.org/software/mark/docs/book/)
+#'#  \url{http://www.phidot.org/software/mark/docs/book/}
 #' pathtodata=paste(path.package("RMark"),"extdata",sep="/")
 #' LD=convert.inp(paste(pathtodata,"ld1",sep="/"),
 #'            group.df=data.frame(age_marked=c("Y","A")))
@@ -1360,13 +1360,17 @@ NULL
 #' 				    "Marked Unidentified"=c(0,0,0,0,1,1,1,0,0,3,0,1)),
 #' 			         time.intervals=c(0,0,0,1,0,0,0,1,0,0,0))
 #' logitNor.ddl=make.design.data(logitNor.proc)
-#' mod=mark(logitNor.proc,logitNor.ddl,threads=1)
+#' # Note that to get good starting values yo should specify a formula that allows use of the sin link
+#' # MARK will ignore the use of the sin link and use log for parameters N and sigma
+#' # after fitting this intial model you can use it for starting values with other model that
+#' # do not require the sin link but always check to make sure the model is converging to 
+#' # reasonable values.
+#' mod=mark(logitNor.proc,logitNor.ddl,
+#'  model.parameters=list(N=list(formula=~-1+session,link="sin"),
+#'  sigma=list(formula=~-1+session,link="sin"),p=list(formula=~1,link="sin")))
 #' summary(mod)
 #' 
 NULL
-
-
-
 
 
 #' Mallard nest survival example
@@ -3994,7 +3998,7 @@ NULL
 #' for the parameter.
 #' 
 #' Before you begin, you must have installed MARK
-#' (\url{http://www.cnr.colostate.edu/~gwhite/mark/mark.htm}) on your computer
+#' (\url{http://warnercnr.colostate.edu/~gwhite/mark/mark.htm}) on your computer
 #' or at least have a current copy of MARK.EXE. As long as you selected the
 #' default location for the MARK install (c:/Program Files/Mark), the
 #' \code{RMark} library will be able to find it.  If for some reason, you choose
@@ -4079,7 +4083,7 @@ NULL
 #' @author Jeff Laake
 #' @references MARK: Dr. Gary White, Department of Fishery and Wildlife
 #' Biology, Colorado State University, Fort Collins, Colorado, USA
-#' \url{http://www.cnr.colostate.edu/~gwhite/mark/mark.htm}
+#' \url{http://warnercnr.colostate.edu/~gwhite/mark/mark.htm}
 #' @keywords utility
 NULL
 

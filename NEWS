@@ -1,3 +1,29 @@
+RMark 2.2.2 (30 Nov 2016)
+
+CHANGES 
+
+* patch to url's for documentation to pass CRAN check
+
+RMark 2.2.1 (28 Nov 2016)
+
+NEW FEATURES
+
+* models Densitypc and DensityRanpc were added.
+
+BUG FIXES
+
+* export.MARK was not correctly handling models with 2 character encounter histories.
+
+* shared submissive parameters in model RD2SpGEConOcc incorrectly had a default formula which should have been NULL. This may have prevented correctly building models with shared parameters.
+
+CHANGES 
+* added error messages to export.model so if files are missing the user is warned. export.model is used in export.MARK
+
+* MARK 8.1 no longer accepts variable names greater than 10 characters in the design matrix.  Thus RMark will fail if you use a model with an individual covariate name with more than 10 characters.
+
+* If the design matrix is diagonal, then RMark will use MARK's shorthand notation for the DM.  This was necessary to achieve good starting values from the 
+LogitNormalMR with the sin link.  See ?LogitNormalMR.
+
 RMark 2.2.0 (23 June 2016)
 
 NEW FEATURES
