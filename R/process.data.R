@@ -270,7 +270,8 @@ robust.occasions<-function(times)
         }
         else
         {
-		   if(any(!nchar(strata.labels)==1))stop("strata.labels must be a single character")
+		   if(!is.character(strata.labels))	stop("strata.labels values must be character type")
+		   if(any(!nchar(strata.labels)==1))stop("each value of strata.labels must be a single character")
            nstrata=length(strata.labels)
            if(!all(inp.strata.labels %in% strata.labels))
               stop(paste("Some strata labels in data",paste(inp.strata.labels,collapse=","),"are not in strata.labels"))
@@ -298,10 +299,10 @@ robust.occasions<-function(times)
          {
             if(any(!ch.values%in%c("0","1",".")))
             {
-               if(substr(model,1,6)!="RDBark" & model!="RDBarkHug" & model!="Barker" & model!="MSOccupancy" &model!="PoissonMR"&model!="UnIdPoissonMR")
+               if(substr(model,1,6)!="RDBark" & !(model%in%c("RDBarkHug","Barker","MSOccupancy","PoissonMR","UnIdPoissonMR","PoissonMRacross","UnIdPoissonMRacross","ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross")))
                   stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
                else
-				  if(model%in%c("PoissonMR","UnIdPoissonMR"))
+				  if(model%in%c("PoissonMR","UnIdPoissonMR","PoissonMRacross","UnIdPoissonMRacross","ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross"))
 				  {			  
 					  if(any(!ch.values%in%c(".",as.character(0:9),"+","-")))
 						  stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))

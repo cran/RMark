@@ -197,7 +197,7 @@ creating input file and running MARK software and retrieving output
 }
 \details{
 This function acts as an interface to the FORTRAN program MARK written by
-Gary White (\url{http://warnercnr.colostate.edu/~gwhite/mark/mark.htm}). It
+Gary White (http://www.phidot.org/software/mark/). It
 creates the input file for MARK based on user-specified sub-models
 (\code{model.parameters}) for each of the parameters in the
 capture-recapture model being fitted to the data. It runs MARK.EXE (see note
@@ -268,13 +268,12 @@ data(dipper)
 dipper.Phidot.pdot=mark(dipper,threads=1)
 
 }
-\author{
-Jeff Laake
-}
 \seealso{
 \code{\link{make.mark.model}}, \code{\link{run.mark.model}},
 \code{\link{make.design.data}}, \code{\link{process.data}},
 \code{\link{summary.mark}}
 }
+\author{
+Jeff Laake
+}
 \keyword{models}
-

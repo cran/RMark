@@ -1,3 +1,32 @@
+RMark 2.2.4 (7 Aug 2017)
+
+
+CHANGES 
+* removed url's to mark because they keep changing. Included address to phidot for mark.
+
+RMark 2.2.3 (4 Aug 2017)
+
+
+NEW FEATURES
+
+* Added models ZiUnIdPoissonMRwithin,PoissonMRacross,UnIdPoissonMRacross,ZiUnIdPoissonMRacross
+
+BUG FIXES
+
+* patched parameters.txt file for models RDOccupPE,RDOccupPG and RDOccupPG. Some values for pi and p were incorrect. 
+
+* added stringsAsFactors=FALSE to conversion of DM to dataframe in make.mark.model which was preventing models with shared parameters to fix real parameter values in some cases.
+
+* patched names of PradSen, PradLambda and PradRec in models.txt which were not capitalized properly and didn't match MARK and prevented import. Thanks to Bryan Hamilton for reporting problem.
+
+CHANGES 
+
+* in model.average.list if the list of v-c matrices are all vectors of length 1 then convert to matrices of 1 row and 1 column; this copes with Ngross being a single value in popan.derived
+
+* added new derived parameters to ORDMS model
+
+* added check to process.data to make sure strata.labels are characters. If set as numeric values (e.g. strata.labels=1:4) bad things can happen. You can use numeric values but specified as characters strata.labels=as.character(1:4).
+
 RMark 2.2.2 (30 Nov 2016)
 
 CHANGES 

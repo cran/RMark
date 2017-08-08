@@ -45,7 +45,7 @@ sin link is now supported if the formula specifies an identity design matrix
 for the parameter.
 
 Before you begin, you must have installed MARK
-(\url{http://warnercnr.colostate.edu/~gwhite/mark/mark.htm}) on your computer
+(http://www.phidot.org/software/mark/) on your computer
 or at least have a current copy of MARK.EXE. As long as you selected the
 default location for the MARK install (c:/Program Files/Mark), the
 \code{RMark} library will be able to find it.  If for some reason, you choose
@@ -125,13 +125,12 @@ known fate. The latter two are examples of the use of
 models. Other examples have been added for the various other models. In MarkModels.pdf it also
 lists the name of examples that are provided for each model.
 }
-\author{
-Jeff Laake
-}
 \references{
 MARK: Dr. Gary White, Department of Fishery and Wildlife
 Biology, Colorado State University, Fort Collins, Colorado, USA
-\url{http://warnercnr.colostate.edu/~gwhite/mark/mark.htm}
+http://www.phidot.org/software/mark/
+}
+\author{
+Jeff Laake
 }
 \keyword{utility}
-

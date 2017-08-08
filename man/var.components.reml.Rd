@@ -76,10 +76,9 @@ xx=var.components.reml(z$estimate,design=model.matrix(~-1+age,z),
 xx
 sqrt(xx$sigmasq)
 library(nlme)
-lme(estimate~-1+age,data=z,random=~1|time)
+nlme::lme(estimate~-1+age,data=z,random=~1|time)
 }
 }
 \author{
 Jeff Laake
 }
-
