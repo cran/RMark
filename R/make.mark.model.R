@@ -200,7 +200,7 @@
 #' The default value for fixing parameters for deleted design data can be
 #' changed with the \code{default=value} in the parameter list.
 #' 
-#' The final useful element of the parameter list is the
+#' Another useful element of the parameter list is the
 #' \code{remove.intercept} argument.  It is set to TRUE to forcefully remove
 #' the intercept.  In R notation this can be done by specifiying the formula
 #' notation ~-1+... but in formula with nested interactions of factor variables
@@ -224,6 +224,10 @@
 #' will not work because while the stratum:tostratum effectively includes an
 #' intercept it is equivalent to using an identity matrix and is not specified
 #' as treatment contrast with one of the columns as all 1's.
+#' 
+#' The final argument of the parameter list is contrast which can be used to change
+#' the contrast used for model.matrix.  It uses the default if none specified. The form is
+#' shown in ?model.matrix.
 #' 
 #' The argument simplify determines whether the pims are simplified such that
 #' only indices for unique and fixed real parameters are used.  For example,
@@ -359,6 +363,8 @@
 #' @param icvalues numeric vector of individual covariate values for computation of real values
 #' @param wrap if TRUE, data lines are wrapped to be length 80; if length of a row is not a 
 #'   problem set to FALSE and it will run faster
+#' @param nodes number of integration nodes for individual random effects (min 15, max 505, default 101)
+#' @param useddl if TRUE and no rows of ddl are missing (deleted) then it will use ddl in place of full.ddl that is created internally.
 #' @return model: a MARK object except for the elements \code{output} and
 #' \code{results}. See \code{\link{mark}} for a detailed description of the
 #' list contents.
@@ -412,7 +418,7 @@ make.mark.model <-
 function(data,ddl,parameters=list(),title="",model.name=NULL,initial=NULL,call=NULL,
 		default.fixed=TRUE,options=NULL,profile.int=FALSE,chat=NULL,simplify=TRUE,
 		input.links=NULL,parm.specific=FALSE,mlogit0=FALSE,hessian=FALSE,accumulate=TRUE,
-		icvalues=NULL,wrap=TRUE)
+           icvalues=NULL,wrap=TRUE,nodes=101,useddl=FALSE)
 {
 
 #  *******************  INTERNAL FUNCTIONS    *********************************
@@ -593,8 +599,9 @@ if(type%in%c("Triang","STriang"))
 #   invisible()
 #}
 
-"pim.header"<- function(group,param.name,parameters,ncol,stratum,tostratum,strata.labels,mixtures,session=NULL,socc=NULL,bracket=FALSE)
+"pim.header"<- function(group,param.name,parameters,ncol,stratum,tostratum,strata.labels,mixtures,session=NULL,socc=NULL,bracket=FALSE,event=NULL)
 {
+  stratum.designation=""	 
   if(!is.null(stratum)&length(strata.labels)>0)
   {
 	  if(bracket)stratum.designation=""	 
@@ -604,16 +611,23 @@ if(type%in%c("Triang","STriang"))
 			  param.name=paste(param.name,"[",stratum,",",tostratum,"]",sep="")
 		  else
 			  stratum.designation=paste(stratum,"to",tostratum)
-#		  stratum.designation=paste(strata.labels[stratum],"to",strata.labels[tostratum])
 	  }
 	  else
 	  {
 		  if(bracket)
 			  param.name=paste(param.name,"[",stratum,"]",sep="")
 		  else
-			  stratum.designation= paste(stratum,":Stratum",stratum,sep="")
-#		  stratum.designation= paste(strata.labels[stratum],":Stratum",stratum,sep="")
-	  }
+		  {
+		    if(param.name%in%c("Delta","pi") & !is.null(event))
+		    {
+		      if(param.name=="Delta") 
+		        param.name=paste("Delta ",event,"|",stratum,sep="")
+		      else
+		        param.name=paste("pi ",stratum,"|",event,sep="")
+		    } else
+		      stratum.designation= paste(stratum,":Stratum",stratum,sep="")
+		   }
+	   }
   }
   else
      stratum.designation=""
@@ -738,7 +752,7 @@ for (i in 1:length(parameters)) {
          ncol = dim(model$pims[[i]][[j]]$pim)[2]
          string=pim.header(pim[[i]][[j]]$group,param.names[i],parameters[[i]],
                    ncol,model$pims[[i]][[j]]$stratum,model$pims[[i]][[j]]$tostratum,model$strata.labels,
-				   mixtures,model$pims[[i]][[j]]$session,parameters[[i]]$socc,bracket=bracket)
+				           mixtures,model$pims[[i]][[j]]$session,parameters[[i]]$socc,bracket=bracket,event=model$pims[[i]][[j]]$event)
          write(string, file = outfile, append = TRUE)
          if(parameters[[i]]$type %in% c("Triang","STriang"))
          {
@@ -954,7 +968,10 @@ create.pim=function(nocc,parameters,npar,mixtures)
                 nmix=mixtures+parameters$rows
         for(k in 1:nmix)
         {
-            mat=rbind(mat,npar:(npar+ncol-1))
+            if(parameters$pim.type!="constant")
+               mat=rbind(mat,npar:(npar+ncol-1))
+            else
+              mat=rbind(mat,rep(npar,ncol))
             npar=npar+ncol
         }
    }
@@ -1008,7 +1025,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   if(length(parameters)>0)
   for(i in 1:length(parameters))
      for(j in 1:length(names(parameters[[i]])))
-        if(!(names(parameters[[i]])[j]%in%c("fixed","formula","link","share","remove.intercept","default")))
+        if(!(names(parameters[[i]])[j]%in%c("fixed","formula","link","share","remove.intercept","default","contrasts")))
         {
            message("\nInvalid model specification for parameter ",names(parameters)[i],".\nUnrecognized element ",names(parameters[[i]])[j])
            stop()
@@ -1028,6 +1045,10 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   temp.rev=data$reverse
   data$reverse=FALSE
   full.ddl=make.design.data(data,parameters=ddl$pimtypes)
+  complete=TRUE
+  for(iname in names(parameters)[names(parameters)%in%names(full.ddl)])
+    if(nrow(full.ddl[[iname]])!=nrow(ddl[[iname]])) complete=FALSE
+  if(complete&useddl)full.ddl=ddl
   data$reverse=temp.rev
   parameters=parameters[names(parameters)%in%names(full.ddl)]
   for(j in names(parameters))
@@ -1229,9 +1250,12 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #
 
   if(is.null(nocc.secondary))
-     string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype)
+     if(is.null(data$events))
+      string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype," Nodes=",nodes)
+     else
+       string=paste("proc title ",title,";\nproc chmatrix occasions=",nocc," groups=",number.of.groups," etype=",etype, " events=",length(data$events),sep="")
   else
-     string=paste("proc title ",title,";\nproc chmatrix occasions=",sum(nocc.secondary)," groups=",number.of.groups," etype=",etype)
+     string=paste("proc title ",title,";\nproc chmatrix occasions=",sum(nocc.secondary)," groups=",number.of.groups," etype=",etype," Nodes=",nodes)
   if(model.list$strata)string=paste(string," strata=",data$nstrata,sep="")
   if(!is.null(covariates))
   {
@@ -1256,7 +1280,11 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   if(!is.null(data$reverse) &&(data$reverse | data$model=="MultScalOcc")) time.int[time.int==0]=1
   string=paste(string," ICMeans NoHist hist=",nrow(zz),
            ";\n time interval ",paste(time.int,collapse=" "),";\n")
-  if(model.list$strata)string=paste(string,"strata=",paste(data$strata.labels[1:data$nstrata],collapse=" "),";\n",sep="")
+  if(model.list$strata)
+    if(is.null(data$events))
+      string=paste(string,"strata=",paste(data$strata.labels[1:data$nstrata],collapse=" "),";\n",sep="")
+    else
+      string=paste(string,"strata=",paste(c(data$strata.labels[1:data$nstrata],data$events),collapse=" "),";\n",sep="")
   if(!is.null(covariates))
   {
      string=paste(string,"icovariates ",paste(covariates,collapse=" "),";")
@@ -1368,38 +1396,43 @@ create.agenest.var=function(data,init.agevar,time.intervals)
      k=0
      for(j in 1:number.of.groups)
      {
-	   if(is.null(parameters[[i]]$bystratum)||!parameters[[i]]$bystratum)
-         xstrata=1
-	   else
-		 xstrata=unique(ddl[[i]]$stratum)
-	   for (jj in xstrata)
-	   {
+	      if(is.null(parameters[[i]]$bystratum)||!parameters[[i]]$bystratum)
+          xstrata=1
+	      else
+		    xstrata=unique(ddl[[i]]$stratum)
+	      if(is.null(parameters[[i]]$events)) 
+	        events=1 
+	      else 
+	        events=data$events
+	      
+	      for(jjj in events)
+	      for (jj in xstrata)
+	      {
           other.strata=1
           if(!is.null(parameters[[i]]$tostrata))
-			  other.strata=unique(ddl[[i]]$tostratum[ddl[[i]]$stratum==jj])
+			         other.strata=unique(ddl[[i]]$tostratum[ddl[[i]]$stratum==jj])
           for(to.stratum in other.strata)
           {
                if(model.list$robust && parameters[[i]]$secondary)
-			   {
-				   multi.session=TRUE
-                   num.sessions=nocc
-			   }
-               else
-			   {
-				   num.sessions=1
-				   multi.session=FALSE
-			   }
+			         {
+				          multi.session=TRUE
+                  num.sessions=nocc
+			         } else
+			         {
+				          num.sessions=1
+				          multi.session=FALSE
+			         }
                for (l in 1:num.sessions)
                {
                   k=k+1
                   pim[[i]][[k]]=list()
-				  if(data$model=="RDMSOccRepro" & names(parameters)[i]=="Phi0")
-				  {
-					  pim[[i]][[k]]$pim=matrix(ddl[[i]]$model.index,ncol=2,byrow=TRUE)   
-				  } else	 
-				  if(!multi.session)
-					 pim[[i]][[k]]$pim=create.pim(nocc,parameters[[i]],npar,mixtures)
-				  else
+				          if(data$model=="RDMSOccRepro" & names(parameters)[i]=="Phi0")
+				          {
+					            pim[[i]][[k]]$pim=matrix(ddl[[i]]$model.index,ncol=2,byrow=TRUE)   
+				          } else	 
+				          if(!multi.session)
+					            pim[[i]][[k]]$pim=create.pim(nocc,parameters[[i]],npar,mixtures)
+				          else
                   {
                      if(is.na(parameters[[i]]$num))
                      {
@@ -1410,11 +1443,12 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                      else
                          pim[[i]][[k]]$pim=create.pim(nocc.secondary[l],parameters[[i]],npar,mixtures)
                      pim[[i]][[k]]$session=l
-					 pim[[i]][[k]]$session.label=levels(ddl[[i]]$session)[l]
+					           pim[[i]][[k]]$session.label=levels(ddl[[i]]$session)[l]
                   }
                   pim[[i]][[k]]$group=j
                   if(length(data$strata.labels)>0 && !is.null(parameters[[i]]$bystratum) && parameters[[i]]$bystratum) pim[[i]][[k]]$stratum=jj
                   if(!is.null(parameters[[i]]$tostrata)) pim[[i]][[k]]$tostratum=to.stratum
+                  if(!is.null(parameters[[i]]$events))pim[[i]][[k]]$event=jjj
                   npar=max(pim[[i]][[k]]$pim)+1
                }
            }
@@ -1597,7 +1631,10 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 #       Compute design matrix with model.matrix
 #         31 Jan 06; made change to allow for NA or missing design data
 #
-        dm=model.matrix(parameters[[parx]]$formula,ddl[[parx]])
+        if(!is.null(parameters[[parx]]$contrasts))
+           dm=model.matrix(parameters[[parx]]$formula,ddl[[parx]],contrasts.arg=parameters[[parx]]$contrasts)
+        else
+          dm=model.matrix(parameters[[parx]]$formula,ddl[[parx]])
 #
 #       In cases with nested interactions it is necessary to remove the intercept
 #       to avoid over-parameterizing the model; this is user-specified
@@ -1828,11 +1865,9 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                     if(k>1)logit.numbers=logit.numbers+logits.per.group
                     for (j in 1:nstrata)	 
                       string=c(string,paste("mlogit(",rep(logit.numbers+(j-1)*length(logit.numbers),(nstrata-1)),")",sep="")) 
-			     }
-			     max.logit.number=max.logit.number+logits.per.group*number.of.groups
-              }
-              else
-              {
+			           }
+			           max.logit.number=max.logit.number+logits.per.group*number.of.groups
+              } else {
                  if(parx%in% c("pent","alpha"))
                  {
                      nsets=length(pim[[parx]])
@@ -1845,18 +1880,37 @@ create.agenest.var=function(data,init.agevar,time.intervals)
                      }
                  }else
                  {
-				    if(parx %in% c("pi","Omega"))
-				    {
-					    for (kk in 1:number.of.groups)
-					    {
-					   	     logit.numbers=max.logit.number+rep(1:(nrow(full.ddl[[parx]])/(number.of.groups*(nstrata-1))),nstrata-1)
-						     max.logit.number=max(logit.numbers)
-						     string=c(string,paste("mlogit(",logit.numbers,")",sep=""))
-					    }			 				 
-				     } else
-                         stop(paste("Mlogit link not allowed with parameter",parx))
-			     }
-               }
+				               if(parx %in% c("pi","Omega"))
+				               { 
+					                if(is.null(data$events)) 
+				                    number.of.events=1
+				                  else
+				                    number.of.events=length(data$events)
+				                  for(kkk in 1:number.of.events)
+					                for (kk in 1:number.of.groups)
+					                {
+					   	            logit.numbers=max.logit.number+rep(1:(nrow(full.ddl[[parx]])/(number.of.events*number.of.groups*(nstrata-1))),nstrata-1)
+						              max.logit.number=max(logit.numbers)
+						              string=c(string,paste("mlogit(",logit.numbers,")",sep=""))
+					                }			 				 
+				               } else {
+				                      if(parx=="Delta"){
+				                          if(is.null(data$events)) 
+				                            number.of.events=1
+				                          else
+				                            number.of.events=length(data$events)
+				                          for (kk in 1:number.of.groups)
+				                          {
+				                            logit.numbers=max.logit.number+rep(1:(nrow(full.ddl[[parx]])/(number.of.events*number.of.groups)),number.of.events)
+				                            max.logit.number=max(logit.numbers)
+				                            string=c(string,paste("mlogit(",logit.numbers,")",sep=""))
+				                          }			 				 
+				                        
+				                      } else  
+                                    stop(paste("Mlogit link not allowed with parameter",parx))
+			                 }
+                 }
+              }
             } else
             {
               xstring=rep(spell(parameters[[i]]$link),dim(full.ddl[[parx]])[1])
@@ -1918,6 +1972,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
       if(!is.null(full.ddl[[parx]]$time))strings=paste(strings," t",full.ddl[[parx]]$time,sep="")
       if(mixtures >1 && !is.null(parameters[[i]]$mix) &&parameters[[i]]$mix)
          strings=paste(strings," m",full.ddl[[parx]]$mixture,sep="")
+      if(!is.null(full.ddl[[parx]]$event))strings=paste(strings," e",full.ddl[[parx]]$event,sep="")
       rnames=c(rnames,strings)
       if(!simplify)
       {
@@ -1969,7 +2024,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 # ones that correspond to fixed parameters.
 #
   if(simplify)
-  {                               
+  {                      
       dm=model$simplify$design.matrix
       fixed.rows=unique(model$simplify$pim.translation[model$fixed$index])
       zero.rows=(1:dim(dm)[1])[apply(dm,1,function(x) return(all(x=="0")))]
@@ -1983,7 +2038,7 @@ create.agenest.var=function(data,init.agevar,time.intervals)
       {
          if(any(! (zero.rows%in%fixed.rows)))
             stop("One or more formulae are invalid because the design matrix has all zero rows for the following non-fixed parameters\n",
-               paste(row.names(dm)[! (zero.rows%in%fixed.rows)],collapse=","))
+               paste(row.names(dm)[zero.rows][!(zero.rows %in% fixed.rows)],collapse=","))
       }
   }
 #

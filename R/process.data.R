@@ -103,13 +103,14 @@
 #' @param nocc number of occasions for Nest type; either nocc or time.intervals
 #' must be specified
 #' @param strata.labels vector of single character values used in capture
-#' history(ch) for ORDMS, CRDMS, RDMSOccRepro models; it can contain one more value beyond what is
-#' in ch for an unobservable state except for RDMSOccRepro which is used to specify strata ordering (eg 0 not-occupied, 1 occupied no repro, 2 occupied with repro.
+#' history(ch) for ORDMS, CRDMS, RDMSOccRepro, HidMarkov models; it can contain more values beyond what is
+#' in ch for unobservable states except for RDMSOccRepro which is used to specify strata ordering (eg 0 not-occupied, 1 occupied no repro, 2 occupied with repro.
 #' @param counts named list of numeric vectors (one group) or matrices (>1
 #' group) containing counts for mark-resight models
 #' @param reverse if set to TRUE, will reverse timing of transition (Psi) and
 #' survival (S) in Multistratum models
 #' @param areas values of areas (1 per group) for Densitypc set of models
+#' @param events vector of character events for Hidden Markov models
 #' @return processed.data (a list with the following elements)
 #' \item{data}{original raw dataframe with group factor variable added if
 #' groups were defined} \item{model}{type of analysis model (eg, "CJS",
@@ -144,7 +145,7 @@
 #' 
 process.data <-
 function(data,begin.time=1,model="CJS",mixtures=1,groups=NULL,allgroups=FALSE,age.var=NULL,
-initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL,counts=NULL,reverse=FALSE,areas=NULL)
+initial.ages=c(0),age.unit=1,time.intervals=NULL,nocc=NULL,strata.labels=NULL,counts=NULL,reverse=FALSE,areas=NULL,events=NULL)
 {
 robust.occasions<-function(times)
 {
@@ -228,7 +229,8 @@ robust.occasions<-function(times)
 #
    model.list=setup.model(model,nocc,mixtures)
 #
-#  data checks
+#  data checks - make sure ch is a character string; freq is numeric and no all 0 ch except
+#  for some mark-resight models
 #
    if(model!="Nest")
    {
@@ -239,7 +241,7 @@ robust.occasions<-function(times)
 		   else
 			   stop("\nch field must be a character string\n")
 	   } else
-	   if(!model.list$occupancy & !model.list$model %in% c("LogitNormalMR","IELogitNormalMR"))
+	   if(!model.list$occupancy & !model.list$model %in% c("LogitNormalMR","UnIdLogitNormalMR","IELogitNormalMR","UnIdIELogitNormalMR","ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross"))
 		   if(any(sapply(strsplit(data$ch,""),function(x) all(x=="0"))))
 			   stop("\nall 0 ch encountered. MARK will not accept them\n")
 	   if(!is.null(data$freq))
@@ -248,20 +250,28 @@ robust.occasions<-function(times)
 			   stop("\n freq field must be numeric\n")
 	   }  
    }
-   #
+#
+#  Except for Nest model, check values of ch (capture history) to make sure they are valid. 
 #  If multistrata design, determine number of strata and their labels
-#  Make sure multistrata designs have at least 2 strata
+#  Make sure multistrata designs have at least 2 strata.
 #
    if(model!="Nest")
    {
+      # Get unique values in the ch strings
       ch.values=unique(unlist(strsplit(data$ch,"")))
-      if(model=="MSLiveDead")
-         inp.strata.labels=sort(ch.values[!(ch.values %in% c("0",".","1"))])
-      else
-         inp.strata.labels=sort(ch.values[!(ch.values %in% c("0","."))])
-	  if(model%in%c("RDMSOpenMisClass","RDMSMisClass","RDMS2MisClass","RDMSOpenMCSeas"))
-		  inp.strata.labels=inp.strata.labels[!inp.strata.labels%in%"u"]
-      nstrata = length(inp.strata.labels)                  
+      # Exclude "0" and "." from strata vector and other values depending on MS model
+      exclude=c("0",".")
+      if(model=="MSLiveDead") exclude=c(exclude,"1")
+      if(model=="HidMarkov") 
+      {
+        if(is.null(strata.labels))stop("strata.labels must be specified for Hidden Markov model")
+        if(is.null(events))stop("events must be specified for Hidden Markov model")
+        exclude=c(exclude,events)
+      }
+      if(model%in%c("RDMSOpenMisClass","RDMSMisClass","RDMS2MisClass","RDMSOpenMCSeas"))exclude=c(exclude,"u")
+      inp.strata.labels=sort(ch.values[!(ch.values %in% exclude)])
+      nstrata = length(inp.strata.labels) 
+      # If this is a multistrata model do some checks
       if(model.list$strata)
       {
         if(is.null(strata.labels)) 
@@ -270,12 +280,12 @@ robust.occasions<-function(times)
         }
         else
         {
-		   if(!is.character(strata.labels))	stop("strata.labels values must be character type")
-		   if(any(!nchar(strata.labels)==1))stop("each value of strata.labels must be a single character")
-           nstrata=length(strata.labels)
-           if(!all(inp.strata.labels %in% strata.labels))
-              stop(paste("Some strata labels in data",paste(inp.strata.labels,collapse=","),"are not in strata.labels"))
-           if(sum(as.numeric(strata.labels %in% inp.strata.labels))< (nstrata-1))
+		      if(!is.character(strata.labels))	stop("strata.labels values must be character type")
+		      if(any(!nchar(strata.labels)==1))stop("each value of strata.labels must be a single character")
+          nstrata=length(strata.labels)
+          if(!all(inp.strata.labels %in% strata.labels))
+            stop(paste("Some strata labels in data",paste(inp.strata.labels,collapse=","),"are not in strata.labels"))
+          if(sum(as.numeric(strata.labels %in% inp.strata.labels))< (nstrata-1))
               message("Note: More than one non-observable state has been specified")
         }
         if(nstrata<2)stop("\nAny multistrata model must have at least 2 strata\n")
@@ -407,7 +417,7 @@ if(number.of.factors==0)
                    freq=matrix(data$freq,ncol=1,dimnames=list(1:number.of.ch,"group1")),
                    nocc=nocc, nocc.secondary=nocc.secondary,time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=age.unit,initial.ages=initial.ages[1],group.covariates=NULL,nstrata=nstrata,
-                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas))
+                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas,events=events))
    }
    else
    {
@@ -421,7 +431,7 @@ if(number.of.factors==0)
                    freq=matrix(rep(1,number.of.ch),ncol=1,dimnames=list(1:number.of.ch,"group1")),
                    nocc=nocc,  nocc.secondary=nocc.secondary, time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=age.unit,initial.ages=initial.ages[1],group.covariates=NULL,nstrata=nstrata,
-                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas))
+                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas,events=events))
    }
 }
 #
@@ -564,6 +574,6 @@ else
                    nocc=nocc, nocc.secondary=nocc.secondary, time.intervals=time.intervals,begin.time=begin.time,
                    age.unit=age.unit,initial.ages=init.ages,
                    group.covariates=group.covariates,nstrata=nstrata,
-                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas))
+                   strata.labels=strata.labels,counts=counts,reverse=reverse,areas=areas,events=events))
 }
 }
