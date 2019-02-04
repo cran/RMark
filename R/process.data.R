@@ -85,7 +85,7 @@
 #' @param model Type of analysis model. See \code{\link{mark}} for a list of
 #' possible values for \code{model}
 #' @param mixtures Number of mixtures in closed capture models with
-#' heterogeneity or number of secondary samples for MultScaleOcc model
+#' heterogeneity or number of secondary samples for MultScalOcc/RDMultScalOcc model
 #' @param groups Vector of factor variable names (in double quotes) in
 #' \code{data} that will be used to create groups in the data. A group is
 #' created for each unique combination of the levels of the factor variables in
@@ -223,7 +223,9 @@ robust.occasions<-function(times)
    {
 	   if(!all(c("TotalLocations","TotalIn") %in% names(data)))
 		   stop("data should contain fields: TotalLocations,TotalIn. One or more are missing.")
+     data=data[,c("ch","TotalIn","TotalLocations",names(data)[!names(data)%in%c("ch","TotalIn","TotalLocations")])]
    }	   
+   if(model%in%c("MultScalOcc","RDMultScalOcc","NSpeciesOcc")&mixtures<=1)stop("mixtures argument must be greater than 1 for Multiple Scale Occupancy and NSpeciesOcc models")
 #
 #  Setup model
 #
@@ -259,6 +261,7 @@ robust.occasions<-function(times)
    {
       # Get unique values in the ch strings
       ch.values=unique(unlist(strsplit(data$ch,"")))
+      if(model=="NSpeciesOcc")ch.values=unique(unlist(substring(data$ch,seq(1,nocc,2),seq(2,nocc,2))))
       # Exclude "0" and "." from strata vector and other values depending on MS model
       exclude=c("0",".")
       if(model=="MSLiveDead") exclude=c(exclude,"1")
@@ -301,8 +304,15 @@ robust.occasions<-function(times)
             }
             else
             {
-               if(any(!ch.values%in%c(".","0","1","2")))
-                    stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+               if(model=="NSpeciesOcc")
+               {
+                 if(any(!as.numeric(ch.values)%in%0:(2^mixtures-1)))
+                   stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=","),"\n",sep=""))
+               } else
+               {
+                 if(any(!ch.values%in%c(".","0","1","2")))
+                   stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+               }
             }
          }
          else
@@ -312,10 +322,15 @@ robust.occasions<-function(times)
                if(substr(model,1,6)!="RDBark" & !(model%in%c("RDBarkHug","Barker","MSOccupancy","PoissonMR","UnIdPoissonMR","PoissonMRacross","UnIdPoissonMRacross","ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross")))
                   stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
                else
-				  if(model%in%c("PoissonMR","UnIdPoissonMR","PoissonMRacross","UnIdPoissonMRacross","ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross"))
-				  {			  
-					  if(any(!ch.values%in%c(".",as.character(0:9),"+","-")))
-						  stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+                 if(model%in%c("PoissonMR","UnIdPoissonMR","PoissonMRacross","UnIdPoissonMRacross"))
+                 {			  
+                   if(any(!ch.values%in%c(".",as.character(0:9),"+","-")))
+                     stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
+                 } else
+                   if(model%in%c("ZiUnIdPoissonMRwithin","ZiUnIdPoissonMRacross"))
+                   {			  
+                     if(any(!ch.values%in%c(".",as.character(0:9),"+","-","*")))
+                       stop(paste("\nIncorrect ch values in data:",paste(ch.values,collapse=""),"\n",sep=""))
 				  } else
 				  {
 				      if(any(!ch.values%in%c(".","0","1","2")))
@@ -328,21 +343,20 @@ robust.occasions<-function(times)
 #
 #  If this is a robust design, compute number of primary and secondary occasions
 #
-   if(model.list$robust &model!="MultScalOcc")
+   if(model.list$robust &!model=="MultScalOcc")
    {
       if(is.null(time.intervals))
          stop("\nTime intervals must be specified for a robust design\n")
       else
       {
-		 if(substr(model,1,6)=="RDBark")
-			  nocc.list=robust.occasions(time.intervals[-length(time.intervals)])
-		 else
-		   nocc.list=robust.occasions(time.intervals)
-		 nocc=nocc.list$nocc
+		     if(substr(model,1,6)=="RDBark")
+			      nocc.list=robust.occasions(time.intervals[-length(time.intervals)])
+		     else
+		        nocc.list=robust.occasions(time.intervals)
+		     nocc=nocc.list$nocc
          nocc.secondary=nocc.list$nocc.secondary
          if(any(nchar(data$ch)/model.list$divisor !=sum(nocc.secondary)))
-             stop("Incorrect number of time intervals. One or more capture history lengths do not match time interval structure.")
-
+            stop("Incorrect number of time intervals. One or more capture history lengths do not match time interval structure.")
       }
       num=model.list$num
    }
@@ -356,11 +370,10 @@ robust.occasions<-function(times)
 		   if(nocc==nocc.secondary*(nocc %/% nocc.secondary))
 		   {
 		      nocc=nocc/nocc.secondary
-			  nocc.secondary=rep(nocc.secondary,nocc)
+			    nocc.secondary=rep(nocc.secondary,nocc)
 		   }
 		   else
 			  stop("# of mixtures (secondary samples) not an even multiple of ch length")
-		   model.list$mixtures=1
 	   }
 #
 #     If time intervals specified make sure there are nocc-1 of them
@@ -368,12 +381,19 @@ robust.occasions<-function(times)
 #
       if(is.null(time.intervals))
           if(model=="MultScalOcc")
-			  time.intervals=rep(1,nocc.secondary[1]*nocc-1)
-	      else
-		      time.intervals=rep(1,nocc+model.list$num)
+			      time.intervals=rep(1,nocc.secondary[1]*nocc-1)
+	        else
+		        time.intervals=rep(1,nocc+model.list$num)
       else
-         if(length(time.intervals)!=(nocc+num))
+         if(model=="RDMultScalOcc")
+         {
+           if(length(time.intervals)!=nocc/mixtures-1)
              stop("Incorrect number of time intervals")
+           
+         } else{         
+           if(length(time.intervals)!=(nocc+num))
+           stop("Incorrect number of time intervals")
+         }
    }
    mixtures=model.list$mixtures
 #

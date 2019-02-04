@@ -25,7 +25,7 @@ different for each group}
 possible values for \code{model}}
 
 \item{mixtures}{Number of mixtures in closed capture models with
-heterogeneity or number of secondary samples for MultScaleOcc model}
+heterogeneity or number of secondary samples for MultScalOcc/RDMultScalOcc model}
 
 \item{groups}{Vector of factor variable names (in double quotes) in
 \code{data} that will be used to create groups in the data. A group is
