@@ -4,9 +4,9 @@
 \alias{covariate.predictions}
 \title{Compute estimates of real parameters for multiple covariate values}
 \usage{
-covariate.predictions(model, data = NULL, indices = NULL, drop = TRUE,
-  revised = TRUE, mata = FALSE, normal.lm = FALSE, residual.dfs = 0,
-  alpha = 0.025, ...)
+covariate.predictions(model, data = NULL, indices = NULL,
+  drop = TRUE, revised = TRUE, mata = FALSE, normal.lm = FALSE,
+  residual.dfs = 0, alpha = 0.025, ...)
 }
 \arguments{
 \item{model}{MARK model object or marklist}
@@ -40,7 +40,8 @@ when the argument normal.lm=TRUE.}
 \item{alpha}{The desired lower and upper error rate.  Specifying alpha=0.025
 corresponds to a 95% MATA-Wald confidence interval, an' 
 alpha=0.05 to a 90% interval.  'alpha' must be between 0 and 0.5.
-Default value is alpha=0.025.}
+Default value is alpha=0.025. This argument now works to set standard confidence interval as well using 
+qnorm(1-alpha) for critical value.}
 
 \item{...}{additional arguments passed to specific functions}
 }

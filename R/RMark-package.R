@@ -1,3 +1,66 @@
+#' Multi-scale dynamic occupancy models in RMark
+#' @name RDMultScalOcc
+#' @author Connor M. Wood, University of Wisconsin-Madison <cwood9 at wisc.edu> 
+#' @examples
+#' \donttest{
+#'# Study design and data structure:
+#'# two sessions (i.e., seasons) and 346 sampling sites
+#'# up to three secondary sampling periods per season
+#'# up to three survey devices per sampling site
+#'
+#'# import the sample data, RDMultScalOcc.sampledata.csv
+#'pathtodata=paste(path.package("RMark"),"extdata",sep="/")
+#'dt=read.csv(paste(pathtodata,"RDMultScalOcc.sampledata.csv",sep="/"))
+#'dt[is.na(dt)]=0 # replace NAs with 0
+#'dt$ch=as.character(dt$ch) # encounter histories (dt$ch) must be characters
+#'
+#'# note: habitat variables (amount of open forest and average slope) were collected at
+#'# two spatial scales
+#'# 'sOpen' and 'sSlope' represent the entire sampling site
+#'# 'pOpen##' and 'pSlope##' represent conditions relevant to individual devices 
+#'# at each sampling period
+#'# the p-scale variables are coded [name][session][primary]; 
+#'# dt.ddl$p$primary indicates how this should be entered
+#'# in this case the values for p$primary varied among devices and between sessions, 
+#'# but were constant between secondary sampling periods
+#'
+#'# create the Process Data MARK object
+#'dt.pr=process.data(dt,model="RDMultScalOcc",
+#'   time.intervals=c(0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0),mixtures=3)
+#'# note: time.intervals refers to seasons, not secondary sampling periods (K)
+#'# note: mixtures refers to the number of devices (L)
+#'
+#'# create the design data object
+#'dt.ddl=make.design.data(dt.pr)
+#'
+#'fit.models=function()
+#'{
+#'# Models for p 
+#'p.open=list(formula=~sOpen)
+#'p.popen=list(formula=~pOpen)
+#'p.slope=list(formula=~sSlope)
+#'p.pslope=list(formula=~pSlope)
+#' # Models for Psi
+#'Psi.open=list(formula=~sOpen)
+#'Psi.Slope=list(formula=~sSlope)
+#' #Model for Gamma
+#'Gamma.open=list(formula=~sOpen)
+#' # Model for Epsilon 
+#'Epsilon.slope=list(formula=~sSlope)
+#' # Model for Theta
+#'# note: 'time' is defined in dt.ddl$Theta (use str(dt) to see all predefined variables)
+#' Theta.time=list(formula=~time)
+#' # create all combinations of these sub-models
+#' cml=create.model.list("RDMultScalOcc")
+#'results=mark.wrapper(cml,data=dt.pr,ddl=dt.ddl,output=FALSE) 
+#'return(results)
+#'}
+#'# fit model collections and view models sorted by AICc
+#'fit.models()
+#'}
+NULL
+
+
 #' An example of the Mulstistrata (multi-state) model in which states are routes taken by migrating fish.
 #' 
 #' @name skagit
@@ -1419,7 +1482,13 @@ NULL
 #' @keywords datasets
 #' @examples
 #' 
-#'# Last updated June 2, 2011
+#'# Last updated September 28, 2019
+#'
+#'# The original mallard example shown below uses idividual calls to mark function.
+#'# This is not as efficient as using mark.wrapper and can cause difficulties if different
+#'# groups arguments are used and model averaging is attempted.  Below this original example
+#'# the more efficient approach is shown. 
+#'
 #'# Read in data, which are in a simple text file that
 #'# looks like a MARK input file but (1) with no comments or semicolons and
 #'# (2) with a 1st row that contains column labels
@@ -1428,189 +1497,193 @@ NULL
 #'# The mallard data set is also incuded with RMark and can be retrieved with
 #'# data(mallard)
 
-#'
+#' \donttest{
+#' # This example is excluded from testing to reduce package check time
+#' # ggplot commands have been commented out so RMark doesn't require ggplot
+#' 
+#'# scripted analysis of mallard nest-survival data in RMark
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Example of use of RMark for modeling nest survival data -   #
 #'# Mallard nests example                                       #
 #'# The example runs the 9 models that are used in the Nest     #
-#'# Survival chapter of the Gentle Introduction to MARK and that# 
+#'# Survival chapter of the Gentle Introduction to MARK and that#
 #'# appear in Table 3 (page 198) of                             #
 #'# Rotella, J.J., S. J. Dinsmore, T.L. Shaffer.  2004.         #
 #'# Modeling nest-survival data: a comparison of recently       #
 #'# developed methods that can be implemented in MARK and SAS.  #
 #'#   Animal Biodiversity and Conservation 27:187-204.          #
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#' \donttest{
-#' # This example is excluded from testing to reduce package check time
-#' require(RMark)
-#' require(plotrix)
-#' 
-#'# Retrieve data
+#'
+#'# The mallard data set is also incuded with RMark and can be retrieved with
 #'data(mallard)
 #'
-#'# Treat dummy variables for habitat types as factors
-#'mallard$Native=factor(mallard$Native)
-#'mallard$Planted=factor(mallard$Planted)
-#'mallard$Wetland=factor(mallard$Wetland)
-#'mallard$Roadside=factor(mallard$Roadside)
+#'# use the indicator variables for the 4 habitat types to yield
+#'# 1 variable with habitat as a factor with 4 levels that
+#'# can be used for a group variable in RMark
+#'mallard$habitat <- ifelse(mallard$Native == 1, "Native",
+#'                          ifelse(mallard$Planted == 1, "Planted",
+#'                                 ifelse(mallard$Roadside == 1, "Roadside",
+#'                                        "Wetland")))
+#'# make the new variable a factor
+#'mallard$habitat <- as.factor(mallard$habitat)
 #'
-#'# Examine a summary of the dataset
-#'summary(mallard)
+#'mallard.pr <- process.data(mallard,
+#'                           nocc=90,
+#'                           model="Nest",
+#'                           groups=("habitat"))
 #'
 #'# Write a function for evaluating a set of competing models
-#'run.mallard=function()
+#'run.mallard <- function()
 #'{
-#'# 1. A model of constant daily survival rate (DSR)
-#'	Dot=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~1)))
-#'	
-#'# 2. DSR varies by habitat type - treats habitats as factors
-#'#  and the output provides S-hats for each habitat type
-#'	Hab=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~Native+Planted+Wetland)),
-#'			groups=c("Native","Planted","Wetland"))
-#'	
-#'# 3. DSR varies with vegetation thickness (Robel reading)
-#'# Note: coefficients are estimated using the actual covariate
-#'# values. They are not based on standardized covariate values.
-#'	Robel=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~Robel)))
-#'	
-#'# 4. DSR varies with the amount of native vegetation in the surrounding area
-#'# Note: coefficients are estimated using the actual covariate
-#'# values. They are not based on standardized covariate values.
-#'	PpnGr=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~PpnGrass)))
-#'	
-#'# 5. DSR follows a trend through time
-#'	TimeTrend=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~Time)))
-#'	
-#'# 6. DSR varies with nest age
-#'	Age=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~NestAge)))
-#'	
-#'# 7. DSR varies with nest age & habitat type
-#'	AgeHab=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~NestAge+Native+Planted+Wetland)),
-#'			groups=c("Native","Planted","Wetland"))
-#'	
-#'# 8. DSR varies with nest age & vegetation thickness
-#'	AgeRobel=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~NestAge+Robel)))
-#'	
-#'# 9. DSR varies with nest age & amount of native vegetation in surrounding area
-#'	AgePpnGrass=mark(mallard,nocc=90,model="Nest",
-#'			model.parameters=list(S=list(formula=~NestAge+PpnGrass)))
-#'	
-#'#
-#'# Return model table and list of models
-#'#
-#'	return(collect.models() )
+#'  # 1. A model of constant daily survival rate (DSR)
+#'  S.Dot = list(formula = ~1)
+#'  
+#'  # 2. DSR varies by habitat type - treats habitats as factors
+#'  #  and the output provides S-hats for each habitat type
+#'  S.Hab = list(formula = ~habitat)
+#'  
+#'  # 3. DSR varies with vegetation thickness (Robel reading)
+#'  S.Robel = list(formula = ~Robel)
+#'  
+#'  # 4. DSR varies with the amount of native vegetation in the surrounding area
+#'  S.PpnGr = list(formula = ~PpnGrass)
+#'  
+#'  # 5. DSR follows a trend through time
+#'  S.TimeTrend = list(formula = ~Time)
+#'  
+#'  # 6. DSR varies with nest age
+#'  S.Age = list(formula = ~NestAge)
+#'  
+#'  # 7. DSR varies with nest age & habitat type
+#'  S.AgeHab = list(formula = ~NestAge + habitat)
+#'  
+#'  # 8. DSR varies with nest age & vegetation thickness
+#'  S.AgeRobel = list(formula = ~NestAge + Robel)
+#'  
+#'  # 9. DSR varies with nest age & amount of native vegetation in
+#'  #  surrounding area
+#'  S.AgePpnGrass = list(formula = ~NestAge + PpnGrass)
+#'  
+#'  # Return model table and list of models
+#'  
+#'  mallard.model.list = create.model.list("Nest")
+#'  
+#'  mallard.results = mark.wrapper(mallard.model.list,
+#'                                 data = mallard.pr,
+#'                                 adjust = FALSE)
 #'}
 #'
 #'# The next line runs the 9 models above and takes a minute or 2
-#'mallard.results=run.mallard()  
+#'mallard.results <- run.mallard()
+#'
+#'mallard.results
+#'
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Examine table of model-selection results #
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#'# next line exports files
+#'export.MARK(mallard.results$S.Age$data,
+#'            "MallDSR",
+#'            mallard.results,
+#'            replace = TRUE,
+#'            ind.covariates = "all")
 #'
-#'export.MARK(mallard.results$Age$data,"MallDSR",mallard.results,replace=TRUE,ind.covariates="all")
 #'mallard.results                        # print model-selection table to screen
-#'options(width=100)                     # set page width to 100 characters
+#'options(width = 100)                   # set page width to 100 characters
 #'sink("results.table.txt")              # capture screen output to file
 #'print(mallard.results)                 # send output to file
 #'sink()                                 # return output to screen
 #'
-#'# remove "#" on next line to see output in notepad                                            
-#'# system("notepad results.table.txt",invisible=FALSE,wait=FALSE) 
+#'# remove "#" on next line to see output in notepad in Windows             
 #'
-#'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#'# Examine output for constant DSR model #
-#'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#'# Remove "#" on next line to see output
-#'# mallard.results$Dot                  # print MARK output to designated text editor
-#'mallard.results$Dot$results$beta       # view estimated beta for model in R
-#'mallard.results$Dot$results$real       # view estimated DSR estimate in R
+#'# system("notepad results.table.txt",invisible=FALSE,wait=FALSE)
+#'# remove "#" on next line to see output in texteditor editor on Mac
+#'# system("open -t  results.table.txt", wait = FALSE)
+#'
+#'names(mallard.results)
+#'
+#'mallard.results$S.Dot$results$beta
+#'mallard.results$S.Dot$results$real
 #'
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Examine output for 'DSR by habitat' model #
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Remove "#" on next line to see output
-#'# mallard.results$Hab                  # print MARK output to designated text editor
-#'mallard.results$Hab$design.matrix      # view the design matrix that was used
-#'mallard.results$Hab$results$beta       # view estimated beta for model in R
-#'mallard.results$Hab$results$beta.vcv   # view variance-covariance matrix for beta's
-#'mallard.results$Hab$results$real       # view the estimates of Daily Survival Rate
+#'# mallard.results$S.Hab                  # print MARK output to designated text editor
+#'mallard.results$S.Hab$design.matrix      # view the design matrix that was used
+#'mallard.results$S.Hab$results$beta       # view estimated beta for model in R
+#'mallard.results$S.Hab$results$beta.vcv   # view variance-covariance matrix for beta's
+#'mallard.results$S.Hab$results$real       # view the estimates of Daily Survival Rate
 #'
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Examine output for best model #
 #'#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #'# Remove "#" on next line to see output
 #'# mallard.results$AgePpnGrass            # print MARK output to designated text editor
-#'mallard.results$AgePpnGrass$results$beta # view estimated beta's in R
-#'mallard.results$AgePpnGrass$results$beta.vcv # view estimated var-cov matrix in R
+#'mallard.results$S.AgePpnGrass$results$beta # view estimated beta's in R
+#'mallard.results$S.AgePpnGrass$results$beta.vcv # view estimated var-cov matrix in R
 #'
 #'# To obtain estimates of DSR for various values of 'NestAge' and 'PpnGrass'
 #'#   some work additional work is needed.
 #'
 #'# Store model results in object with simpler name
-#'AgePpnGrass=mallard.results$AgePpnGrass
+#'AgePpnGrass <- mallard.results$S.AgePpnGrass
 #'# Build design matrix with ages and ppn grass values of interest
 #'# Relevant ages are age 1 to 35 for mallards
 #'# For ppngrass, use a value of 0.5
-#'fc=find.covariates(AgePpnGrass,mallard)
-#'fc$value[1:35]=1:35                    # assign 1:35 to 1st 35 nest ages
-#'fc$value[fc$var=="PpnGrass"]=0.1       # assign new value to PpnGrass
-#'design=fill.covariates(AgePpnGrass,fc) # fill design matrix with values
+#'fc <- find.covariates(AgePpnGrass,mallard)
+#'fc$value[1:35] <- 1:35                      # assign 1:35 to 1st 35 nest ages
+#'fc$value[fc$var == "PpnGrass"] <- 0.1       # assign new value to PpnGrass
+#'design <- fill.covariates(AgePpnGrass, fc)  # fill design matrix with values
 #'# extract 1st 35 rows of output
-#'AgePpn.survival=compute.real(AgePpnGrass,design=design)[1:35,] 
+#'AgePpn.survival <- compute.real(AgePpnGrass, design = design)[1:35, ]
 #'# insert covariate columns
-#'AgePpn.survival=cbind(design[1:35,c(2:3)],AgePpn.survival)     
-#'colnames(AgePpn.survival)=c("Age","PpnGrass","DSR","seDSR","lclDSR","uclDSR")
-#'AgePpn.survival       # view estimates of DSR for each age and PpnGrass combo
+#'AgePpn.survival <- cbind(design[1:35, c(2:3)], AgePpn.survival)     
+#'colnames(AgePpn.survival) <- c("Age", "PpnGrass","DSR", "seDSR", "lclDSR",
+#'                               "uclDSR")
+#'# view estimates of DSR for each age and PpnGrass combo
+#'AgePpn.survival
 #'
-#'# Plot results
-#'with(data=AgePpn.survival,plot(Age,DSR,'l',ylim=c(0.88,1)))
-#'grid()
-#'axis.break(axis=2,breakpos=0.879,style='slash')
-#'with(data=AgePpn.survival,points(Age,lclDSR,'l',lty=3))
-#'with(data=AgePpn.survival,points(Age,uclDSR,'l',lty=3))
+#'#library(ggplot2)
+#'#ggplot(AgePpn.survival, aes(x = Age, y = DSR)) +
+#'#  geom_line() +
+#'#  geom_ribbon(aes(ymin = lclDSR, ymax = uclDSR), alpha = 0.3) +
+#'#  xlab("Nest Age (days)") +
+#'#  ylab("Estimated DSR") +
+#'#  theme_bw()
 #'
 #'# assign 17 to 1st 50 nest ages
-#'fc$value[1:89]=17                     
+#'fc$value[1:89] <- 17                     
 #'# assign range of values to PpnGrass
-#'fc$value[fc$var=="PpnGrass"]=seq(0.01,0.99,length=89) 
-#'design=fill.covariates(AgePpnGrass,fc) # fill design matrix with values
-#'AgePpn.survival=compute.real(AgePpnGrass,design=design)
+#'fc$value[fc$var == "PpnGrass"] <- seq(0.01, 0.99, length = 89)
+#'# fill design matrix with values
+#'design <- fill.covariates(AgePpnGrass,fc)
+#'AgePpn.survival <- compute.real(AgePpnGrass, design = design)
 #'# insert covariate columns
-#'AgePpn.survival=cbind(design[,c(2:3)],AgePpn.survival)     
-#'colnames(AgePpn.survival)=
-#'		c("Age","PpnGrass","DSR","seDSR","lclDSR","uclDSR")
-#'# view estimates of DSR for each age and PpnGrass combo    
+#'AgePpn.survival <- cbind(design[ , c(2:3)], AgePpn.survival)     
+#'colnames(AgePpn.survival) <-
+#'  c("Age", "PpnGrass", "DSR", "seDSR", "lclDSR", "uclDSR")
+#'# view estimates of DSR for each age and PpnGrass combo   
 #'AgePpn.survival   
 #'
 #'# Plot results
-#'# open new graphics window for new plot
-#'dev.new()                          
-#'with(data=AgePpn.survival,plot(PpnGrass,DSR,'l',ylim=c(0.88,1)))
-#'grid()
-#'axis.break(axis=2,breakpos=0.879,style='slash')
-#'with(data=AgePpn.survival,points(PpnGrass,lclDSR,'l',lty=3))
-#'with(data=AgePpn.survival,points(PpnGrass,uclDSR,'l',lty=3))
+#'#ggplot(AgePpn.survival, aes(x = PpnGrass, y = DSR)) +
+#'#  geom_line() +
+#'#  geom_ribbon(aes(ymin = lclDSR, ymax = uclDSR), alpha = 0.3) +
+#'#  xlab("Proportion Grass on Site") +
+#'#  ylab("Estimated DSR") +
+#'#  theme_bw()
 #'
-#'# The "rm" command can be used to remove all objects from the .Rdata file.
-#'# Cleaning up objects as shown in this script is good programming 
-#'# practice and a good idea as long as the computations are not time consuming.  
-#'# However, if your analysis is taking several hours or days in MARK then 
-#'# clearly you'll want to hang onto the resulting objects in R and you 
-#'# won't want to use the following command. It has been commented out for
-#'# this example; the "#" on the next line needs to be removed to do the clean up.
-#'# rm(list=ls(all=TRUE))
+#'# If you want to clean up the mark*.inp, .vcv, .res and .out
+#'#  and .tmp files created by RMark in the working directory,
+#'#  execute 'rm(list = ls(all = TRUE))' - see 2 lines below.
+#'# NOTE: this will delete all objects in the R session.
+#'# rm(list = ls(all=TRUE))
+#'# Then, execute 'cleanup(ask = FALSE)' to delete orphaned output
+#'#  files from MARK. Execute '?cleanup' to learn more
+#'# cleanup(ask = FALSE)
 #'
-#'# The next line deletes orphaned output files from MARK.  
-#'# ?cleanup will give a more complete description of this function.
-#'cleanup(ask=FALSE)
+#'
 #' }
 NULL
 
@@ -2629,23 +2702,23 @@ NULL
 #' 	
 #' 	Model.1=mark(wwdo.proc, wwdo.ddl, 
 #'    model.parameters=list(Phi=Phi.dot.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)),
-#'    invisible=FALSE)
+#'    invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	Model.2=mark(wwdo.proc, wwdo.ddl, 
 #'   model.parameters=list(Phi=Phi.time.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)),
-#'    invisible=FALSE)
+#'    invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	Model.3=mark(wwdo.proc, wwdo.ddl, 
 #'   model.parameters=list(Phi=Phi.age.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), 
-#'     invisible=FALSE)
+#'     invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	Model.4=mark(wwdo.proc, wwdo.ddl, 
 #'   model.parameters=list(Phi=Phi.timeage.fix, p=p.dot, pent=pent.time.fix, N=list(formula=~group)), 
-#'     invisible=FALSE)
+#'     invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	Model.5=mark(wwdo.proc, wwdo.ddl,  
 #'   model.parameters=list(Phi=Phi.timeage.fix, p=p.time, pent=pent.time.fix, N=list(formula=~group)), 
-#'    invisible=FALSE)
+#'    invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	Model.6=mark(wwdo.proc, wwdo.ddl, 
 #'    model.parameters=list(Phi=Phi.timeage.fix,p=p.g.time, pent=pent.time.fix,
 #'               N=list(formula=~group)), 
-#'    invisible=FALSE)
+#'    invisible=FALSE,threads=1,options="SIMANNEAL")
 #' 	collect.models()
 #' }
 #' wwdo.out=wwdo.popan()
@@ -2761,6 +2834,74 @@ NULL
 #'ddl=make.design.data(dp)
 #'model=mark(dp,ddl,model.parameters=list(f=list(formula=~-1+mixture,link="sin"),
 #'p=list(formula=~1,link="sin")))
+#'}
+NULL
+
+#'  Mulstistate Live-Dead Paradise Shelduck Data
+#'  
+#' @name Paradise_shelduck
+#' @aliases ps
+#' @docType data
+#' @description Paradise shelduck recapture and recovery data in multistrata provided by Richard Barker and Gary White.
+#' @format  A data frame with 1704 observations of 3 variables 
+#'  \describe{ 
+#'  \item{ch}{a character vector containing the capture history (each is 2 character positions LD) for 6 occasions}
+#'  \item{freq}{capture history frequency} 
+#'  \item{sex}{Male or Female}
+#'  }
+#' @keywords datasets
+#' @author Jeff Laake
+#' @references Barker, R.J, White,G.C, and M. McDougall. 2005. MOVEMENT OF PARADISE SHELDUCK BETWEEN MOLT SITES: 
+#' A JOINT MULTISTATE-DEAD RECOVERY MARK–RECAPTURE MODEL. JOURNAL OF WILDLIFE MANAGEMENT 69(3):1194–1201.
+#' @examples
+#' \donttest{
+#' # In the referenced article, there are 3 observable strata (A,B,C) and 
+#' # 3 unobservable strata (D,E,F). This example is setup by default to use only  
+#' # the 3 observable strata to avoid problems with multiple modes in the likelihood.  
+#' # Code that uses all 6 strata are provided but commented out. With unobservable strata,
+#' # simulated annealing should be used (options="SIMANNEAL")
+#' data("Paradise_shelduck")
+#' # change sex reference level to Male to match design matrix used in MARK
+#' ps$sex=relevel(ps$sex,"Male")
+#' # Process data with MSLiveDead model using sex groups and specify only observable strata
+#' ps_dp=process.data(ps,model="MSLiveDead",groups="sex",strata.labels=c("A","B","C"))
+#' # Process data with MSLiveDead model using sex groups and
+#' # specify observable and unboservable strata
+#' # ps_dp=process.data(ps,model="MSLiveDead",groups="sex",
+#' #                        strata.labels=c("A","B","C","D","E","F"))
+#' # Make design data and specify constant PIM for Psi to reduce parameter space. No time variation
+#' # allowed in Psi in the article.
+#' ddl=make.design.data(ps_dp,parameters=list(Psi=list(pim.type="constant")))
+#' # Fix p to 0 for unobservable strata (only needed if they are included)
+#' ddl$p$fix=NA
+#' ddl$p$fix[ddl$p$stratum%in%c("D","E","F")]=0
+#' # Fix p to 0 for last occasion
+#' ddl$p$fix[ddl$p$time==6]=0.0
+#' # Fix survival to 0.5 for last interval to match MARK file (to avoid confounding)
+#' ddl$S$fix=NA
+#' ddl$S$fix[ddl$S$time==6]=0.5
+#' # create site variable for survival which matches A with D, B with E and C with F 
+#' ddl$S$site="A"
+#' ddl$S$site[ddl$S$stratum%in%c("B","C")]=as.character(ddl$S$stratum[ddl$S$stratum%in%c("B","C")])
+#' ddl$S$site[ddl$S$stratum%in%c("E")]="B"
+#' ddl$S$site[ddl$S$stratum%in%c("F")]="C"
+#' ddl$S$site=as.factor(ddl$S$site)
+#' # create same site variable for recovery probability (r)
+#' ddl$r$site="A"
+#' ddl$r$site[ddl$r$stratum%in%c("B","C")]=as.character(ddl$r$stratum[ddl$r$stratum%in%c("B","C")])
+#' ddl$r$site[ddl$r$stratum%in%c("E")]="B"
+#' ddl$r$site[ddl$r$stratum%in%c("F")]="C"
+#' ddl$r$site=as.factor(ddl$r$site)
+#' # Specify formula used in MARK model
+#' S.1=list(formula=~-1+sex+time+site)
+#' p.1=list(formula=~-1+stratum:time)
+#' r.1=list(formula=~-1+time+sex+site)
+#' Psi.1=list(formula=~-1+stratum:tostratum)
+#' # Run top model from paper but only for observable strata
+#' top_model=mark(ps_dp,ddl,model.parameters=list(S=S.1,p=p.1,r=r.1,Psi=Psi.1))
+#' # Run top model from paper for all strata using simulated annealing (commented out)
+#' #top_model=mark(ps_dp,ddl,model.parameters=list(S=S.1,p=p.1,r=r.1,Psi=Psi.1),
+#' #      options="SIMANNEAL")
 #'}
 NULL
 
@@ -4198,4 +4339,5 @@ NULL
 #' http://www.phidot.org/software/mark/
 #' @keywords utility
 NULL
+
 

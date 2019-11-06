@@ -4,9 +4,9 @@
 \alias{MS_popan}
 \title{Convert Multistate data for POPAN-style abundance estimation}
 \usage{
-MS_popan(x, augment_num = 100, augment_stratum = "A", enter_stratum = "B",
-  strata = NULL, begin.time = 1, groups = NULL, ddl = FALSE,
-  time.intervals = NULL)
+MS_popan(x, augment_num = 100, augment_stratum = "A",
+  enter_stratum = "B", strata = NULL, begin.time = 1,
+  groups = NULL, ddl = FALSE, time.intervals = NULL)
 }
 \arguments{
 \item{x}{an RMark dataframe}
@@ -44,6 +44,7 @@ Nhat_MS=Psi_estimates$estimate[1]*sum(abs(data.list$data$data$freq))
 se_Nhat_MS=Psi_estimates$se[1]*Nhat_MS
 cat("Popan N = ",popan_N$estimate," (se = ",popan_N$se,")\\n")
 cat("MS N = ",Nhat_MS," (se = ",se_Nhat_MS,")\\n")
+
 }
 }
 \author{
