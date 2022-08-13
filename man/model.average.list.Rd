@@ -52,7 +52,7 @@ errors or variance-covariance matrix
 \details{
 If a single estimate is being model-averaged then \code{estimate} and
 \code{se} are vectors with an entry for each model.  However, if there are
-several estimatee being averaged then both \code{estimate} and \code{se}
+several estimates being averaged then both \code{estimate} and \code{se}
 should be matrices in which the estimates for each model are a row in the
 matrix.  Regardless, if \code{vcv} is specified it should be a list of
 matrices and in the case of a single estimate, each matrix is 1x1 containing
@@ -84,12 +84,12 @@ run.dipper=function()
 {
 dipper$nsex=as.numeric(dipper$sex)-1
 mod1=mark(dipper,groups="sex",
-   model.parameters=list(Phi=list(formula=~sex)))
+   model.parameters=list(Phi=list(formula=~sex)),delete=TRUE)
 mod2=mark(dipper,groups="sex",
-   model.parameters=list(Phi=list(formula=~1)))
+   model.parameters=list(Phi=list(formula=~1)),delete=TRUE)
 mod3=mark(dipper,groups="sex",
    model.parameters=list(p=list(formula=~time),
-   Phi=list(formula=~1)))
+   Phi=list(formula=~1)),delete=TRUE)
 dipper.list=collect.models()
 return(dipper.list)
 }

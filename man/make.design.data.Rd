@@ -4,8 +4,13 @@
 \alias{make.design.data}
 \title{Create design dataframes for MARK model specification}
 \usage{
-make.design.data(data, parameters = list(), remove.unused = FALSE,
-  right = TRUE, common.zero = FALSE)
+make.design.data(
+  data,
+  parameters = list(),
+  remove.unused = FALSE,
+  right = TRUE,
+  common.zero = FALSE
+)
 }
 \arguments{
 \item{data}{Processed data list; resulting value from process.data}
@@ -22,7 +27,7 @@ binning times\cr \code{cohort.bins} \tab bins for binning cohorts\cr
 structure, or \cr \tab "constant" for all values the same within the PIM\cr}}
 
 \item{remove.unused}{If TRUE, unused design data are deleted; see details
-below}
+below (as of v3.0.0 this argument is no longer used)}
 
 \item{right}{If TRUE, bin intervals are closed on the right}
 
@@ -105,13 +110,20 @@ there are 16 groups and each group has 21 Phi parameters and 21 p
 parameters. Thus, there are 336 rows (parameters) in the design data frame
 for both Phi and p and thus a total of 772 parameters.
 
-The default fields in each dataframe are \code{group}, \code{cohort},
+The default fields in each dataframe are typically \code{group}, \code{cohort},
 \code{age}, \code{time}, \code{Cohort}, \code{Age}, and \code{Time}. The
 first 4 fields are factor variables, whereas \code{Cohort}, \code{Age} and
 \code{Time} are numeric covariate versions of \code{cohort}, \code{age}, and
-\code{time} shifted so the first value is always zero. In addition, for
-closed capture heterogeneity models a factor variable \code{mixture} is
-included. If \code{groups} were created in the call to
+\code{time} shifted so the first value is always zero. However, there are
+additional fields that are added depending on the capture-recapture model and 
+the parameter in the model. For example, in multistrata models the default data 
+include stratum in survival(S) and stratum and tostratum in Psi, the transition 
+probabilities.  Also, for closed capture heterogeneity models a factor variable 
+\code{mixture} is included. It is always best to examine the design data after 
+creating them because those fields are your "data" for building models in 
+addition to individual covariates in the capture history data.
+
+If \code{groups} were created in the call to
 \code{\link{process.data}}, then the factor variables used to create the
 \code{groups} are also included in the design data for each type of
 parameter.  If one of the grouping variables is an age variable it is named
@@ -181,6 +193,7 @@ whereas \code{~time} creates a model with a different factor level for each
 \code{time} in the data (e.g. Phi(t) or p(t) in MARK) and \code{~timebin}
 creates a model with 2 factor levels 1980-1983 and 1984-1986.
 
+
 Some circumstances may require direct manipulation of the design data to
 create the needed variable when simple binning is not sufficient or when the
 design data is a variable other than one related to \code{time}, \code{age},
@@ -215,10 +228,12 @@ described in \code{\link{make.mark.model}}, there is actually a simpler way
 to add simple functions of variables to a formula without defining them in
 the design data.
 
+
 The above manipulations are sufficient if there is only one or two variables
 that need to be added to the design data.  If there are many covariates that
 are time(occasion)-specific then it may be easier to setup a dataframe with
 the covariate data and use \code{\link{merge_design.covariates}}.
+
 
 The fields that are automatically created in the design data depends on the
 model.  For example, with models such as "POPAN" or any of the "Pradel"
@@ -231,6 +246,7 @@ row within a triangular PIM for "CJS" type models. Thus, for parameters with
 field is also not created if \code{pim.type="time"} for "Triangular" PIMS,
 because that structure has the same structure for each row (cohort) and
 adding cohort effects would be inappropriate.
+
 
 For models with "Square" PIMS or \code{pim.type="time"} for "Triangular"
 PIMS, it is possible to create a cohort variable by defining the cohort
@@ -280,7 +296,7 @@ were no capture history data that started with 0 and had a 1 in the second
 position ("01.....") that would mean that there were no releases on occasion
 2 and row 2 in the PIM would not be needed so it would be removed from the
 design data.  If \code{remove.unused=TRUE} the design data are removed for
-any missig cohorts within each group. For models with "Square" PIMS, cohort
+any missing cohorts within each group. For models with "Square" PIMS, cohort
 structure is defined by a grouping variable.  If there is a field named
 "cohort" within the design data, then unused design data are defined to
 occur when time < cohort.  This is particularly useful for age structured
@@ -329,11 +345,12 @@ and the strata label (e.g., toA, toB etc). Some examples of using these
 variables to create models for "Psi" are given in
 \code{\link{make.mark.model}}.
 
-\preformatted{
+\preformatted{ 
 
 ######WARNING######## 
 Deleting design data for mlogit parameters like Psi in the multistate
-model can fail if you do things like delete certain transitions.  It is better
+model can fail if you do things like delete certain transitions.  Deleting
+design data is no longer allowed. It is better
 to add the field fix. It should be assigned the value NA for parameters that
 are estimated and a fixed real value for those that are fixed. Here is an example
 with the mstrata data example:
@@ -344,13 +361,13 @@ dp=process.data(mstrata,model="Multistrata")
 ddl=make.design.data(dp)
 ddl$Psi=ddl$Psi[!(ddl$Psi$stratum=="A" & ddl$Psi$tostratum=="B"),]
 ddl$Psi
-summary(mark(dp,ddl,output=FALSE),show.fixed=TRUE)
+summary(mark(dp,ddl,output=FALSE,delete=TRUE),show.fixed=TRUE)
 #new approach using fix to set Phi=1 for time 2 (USE this approach)
 ddl=make.design.data(dp)
 ddl$Psi$fix=NA
 ddl$Psi$fix[ddl$Psi$stratum=="A" & ddl$Psi$tostratum=="B"]=0
 ddl$Psi
-summary(mark(dp,ddl,output=FALSE),show.fixed=TRUE)
+summary(mark(dp,ddl,output=FALSE,delete=TRUE),show.fixed=TRUE)
 }
 }
 \examples{

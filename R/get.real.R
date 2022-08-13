@@ -72,7 +72,7 @@
 #' pregion=list(formula=~region)
 #' PhiAge=list(formula=~Age)
 #' mod=mark(example.data,model.parameters=list(p=pregion,Phi=PhiAge),
-#'  groups=c("sex","age","region"),age.var=2,initial.ages=c(0,1,2),threads=1)
+#'  groups=c("sex","age","region"),age.var=2,initial.ages=c(0,1,2),threads=1,delete=TRUE)
 #' # extract list of Phi parameter estimates for all groups in PIM format 
 #' Phi.estimates=get.real(mod,"Phi")  
 #' # print out parameter estimates in triangular PIM format
@@ -159,7 +159,7 @@ function(model,parameter,beta=NULL,se=FALSE,design=NULL,data=NULL,vcv=FALSE,show
 #If se=TRUE, warn user if beta.vcv has negative variances
 #
   if(se)
-    if(any(is.nan(model$results$beta.vcv)) || any(is.infinite(abs(model$results$beta.vcv))) ||
+    if(any(is.nan(model$results$beta.vcv)) || any(is.infinite(model$results$beta.vcv)) ||
        any(diag(model$results$beta.vcv)<0))
        warning("\nImproper V-C matrix for beta estimates. Some variances non-positive.\n")
 #

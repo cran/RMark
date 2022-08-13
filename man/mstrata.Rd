@@ -4,10 +4,12 @@
 \name{mstrata}
 \alias{mstrata}
 \title{Multistrata example data}
-\format{A data frame with 255 observations on the following 2 variables.
+\format{
+A data frame with 255 observations on the following 2 variables.
 \describe{ \item{ch}{a character vector containing the encounter history of
 each bird with strata} \item{freq}{the number of birds with that capture
-history} }}
+history} }
+}
 \description{
 An example data set which appears to be simulated data that accompanies MARK
 as an example analysis using the Multistrata model.
@@ -71,7 +73,8 @@ model.list=rbind(model.list,c(S="S.stratumxtime",p="p.stratumxtime.fixed",
 #
 # Run the list of models
 #
-mstrata.results=mark.wrapper(model.list,data=mstrata.processed,ddl=mstrata.ddl,threads=2)
+mstrata.results=mark.wrapper(model.list,data=mstrata.processed,ddl=mstrata.ddl,threads=2,
+                            delete=TRUE)
 #
 # Return model table and list of models
 #
@@ -81,15 +84,15 @@ mstrata.results=run.mstrata()
 mstrata.results
 
 # Example of reverse Multistratum model
-data(mstrata)
-mod=mark(mstrata,model="Multistrata")
-mod.rev=mark(mstrata,model="Multistrata",reverse=TRUE)
-Psilist=get.real(mod,"Psi",vcv=TRUE)
-Psilist.rev=get.real(mod.rev,"Psi",vcv=TRUE)
-Psivalues=Psilist$estimates
-Psivalues.rev=Psilist.rev$estimates
-TransitionMatrix(Psivalues[Psivalues$time==1,])
-TransitionMatrix(Psivalues.rev[Psivalues.rev$occ==1,])
+#data(mstrata)
+#mod=mark(mstrata,model="Multistrata",delete=TRUE)
+#mod.rev=mark(mstrata,model="Multistrata",reverse=TRUE,delete=TRUE)
+#Psilist=get.real(mod,"Psi",vcv=TRUE)
+#Psilist.rev=get.real(mod.rev,"Psi",vcv=TRUE)
+#Psivalues=Psilist$estimates
+#Psivalues.rev=Psilist.rev$estimates
+#TransitionMatrix(Psivalues[Psivalues$time==1,])
+#TransitionMatrix(Psivalues.rev[Psivalues.rev$occ==1,])
 }
 }
 \keyword{datasets}

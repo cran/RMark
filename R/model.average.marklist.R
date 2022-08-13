@@ -117,7 +117,7 @@
 #' #
 #' # Run and return the list of models
 #' #
-#' return(mark.wrapper(cml,data=dipper.processed,ddl=dipper.ddl))
+#' return(mark.wrapper(cml,data=dipper.processed,ddl=dipper.ddl,delete=TRUE))
 #' }
 #' dipper.results=run.dipper()
 #' Phi.estimates=model.average(dipper.results,"Phi",vcv=TRUE)
@@ -130,13 +130,13 @@
 #' #  ~weight will vary
 #' dipper$weight=rnorm(294)  
 #' mod1=mark(dipper,groups="sex",
-#'   model.parameters=list(Phi=list(formula=~sex+weight)))
+#'   model.parameters=list(Phi=list(formula=~sex+weight)),delete=TRUE)
 #' mod2=mark(dipper,groups="sex",
-#'   model.parameters=list(Phi=list(formula=~sex)))
+#'   model.parameters=list(Phi=list(formula=~sex)),delete=TRUE)
 #' mod3=mark(dipper,groups="sex",
-#'   model.parameters=list(Phi=list(formula=~weight)))
+#'   model.parameters=list(Phi=list(formula=~weight)),delete=TRUE)
 #' mod4=mark(dipper,groups="sex",
-#'   model.parameters=list(Phi=list(formula=~1)))
+#'   model.parameters=list(Phi=list(formula=~1)),delete=TRUE)
 #' dipper.list=collect.models()
 #' return(dipper.list)
 #' }
@@ -169,7 +169,7 @@ model.average.marklist<- function(x,parameter=NULL,data=NULL,vcv=FALSE,drop=TRUE
 #
 model.list=x
 model=load.model(model.list[[1]])
-if(class(model.list)!="marklist")
+if(!inherits(model.list,"marklist"))
   stop("\nArgument for model.average must be a marklist created by collect.models\n")
 if(is.null(model.list$model.table))
    stop("\nmarklist created by collect.models must contain a model.table to use model.average\n")
@@ -217,7 +217,7 @@ if(drop)
       }
       model.indices=unique(model$simplify$pim.translation[indices])
       used.beta=which(apply(model$design.matrix[model.indices,,drop=FALSE],2,function(x)!all(x=="0")))
-      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(abs(model$results$beta.vcv[used.beta,used.beta]))) ||
+      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(model$results$beta.vcv[used.beta,used.beta])) ||
          any(diag(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])<0))
 #      if(any(diag(model$results$beta.vcv)<0))
       {
@@ -416,7 +416,7 @@ else
 		   {
 			   if(!is.null(reals[[j]]))
 			   {
-				   link.list=compute.links.from.reals(reals[[j]]$estimate[i],model.list[[1]],parm.indices=result$par.index[i],vcv.real=vcv.real[result$par.index[i],result$par.index[i]],use.mlogits=FALSE)
+			     link.list=compute.links.from.reals(reals[[j]]$estimate[i],model.list[[1]],parm.indices=result$par.index[i],vcv.real=vcv.real[i,i],use.mlogits=FALSE)
 				   link.estimate=c(link.estimate,link.list$estimates)
 				   link.se=c(link.se,sqrt(diag(link.list$vcv)))
 			   }	   

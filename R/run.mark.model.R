@@ -75,7 +75,7 @@
 #' 	  p.dot=list(formula=~1)
 #' 	  p.time=list(formula=~time)
 #' 	  cml=create.model.list("CJS")
-#' 	  x.results=mark.wrapper(cml,data=x.proc,ddl=x.ddl,prefix=sex)
+#' 	  x.results=mark.wrapper(cml,data=x.proc,ddl=x.ddl,prefix=sex,delete=TRUE)
 #' 	  assign(paste(sex,"results",sep="."),x.results)
 #'   }
 #'   rm(Male.results,Female.results,x.results)
@@ -219,7 +219,7 @@ delete=FALSE,external=FALSE,threads=-1,ignore.stderr=FALSE)
 #
   model$output=basefile
   model$input=NULL
-  if(class(results)=="try-error")
+  if(inherits(results,"try-error"))
   {
 	  if(!ignore.stderr) 
 	  {

@@ -53,9 +53,9 @@
 #' data(dipper)
 #' do_example=function()
 #' {
-#' mod1=mark(dipper)
-#' mod2=mark(dipper,model.parameters=list(Phi=list(formula=~time)))
-#' mod3=mark(dipper,model="POPAN",initial=1)
+#' mod1=mark(dipper,delete=TRUE)
+#' mod2=mark(dipper,model.parameters=list(Phi=list(formula=~time)),delete=TRUE)
+#' mod3=mark(dipper,model="POPAN",initial=1,delete=TRUE)
 #' cjs.results=collect.models(type="CJS")
 #' cjs.results  # show model selection results for "CJS" models
 #' }
@@ -90,7 +90,7 @@ adjust.value <- function(field="n",value,model.list)
 #
 if(!missing(model.list))
 {
-   if(class(model.list)=="marklist")
+   if(inherits(model.list,"marklist"))
    {
       if(names(model.list)[length(model.list)]=="model.table")
          model.list=model.list[1:(length(model.list)-1)]

@@ -153,7 +153,7 @@
 #'   Phi.mass.plus.mass.squared=list(formula=~mass + sqmass)
 #'   p.dot=list(formula=~1)
 #'   cml=create.model.list("CJS")
-#'   results=mark.wrapper(cml,data=ind1.process,ddl=ind1.ddl,adjust=FALSE)
+#'   results=mark.wrapper(cml,data=ind1.process,ddl=ind1.ddl,adjust=FALSE,delete=TRUE)
 #'   return(results)
 #' }
 #' #
@@ -241,7 +241,7 @@
 #'      list(formula=~time*mass + sqmass+ time:sqmass)
 #'   p.dot=list(formula=~1)
 #'   cml=create.model.list("CJS")
-#'   results=mark.wrapper(cml,data=ind2.process,ddl=ind2.ddl,adjust=FALSE,threads=2)
+#'   results=mark.wrapper(cml,data=ind2.process,ddl=ind2.ddl,adjust=FALSE,threads=2,delete=TRUE)
 #'   return(results)
 #' }
 #' #
@@ -305,7 +305,7 @@ covariate.predictions <- function(model,data=NULL,indices=NULL,drop=TRUE, revise
 #   vcv              - variance-covariance matrix of real estimates
 #
 # ------------------------------------------------------------------------------------------------
-   if(class(model)[1]!="marklist")
+   if(!inherits(model,"marklist"))
    {
      number.of.models=1
      model=load.model(model)
@@ -367,7 +367,7 @@ if(drop)
 	 
       model.indices=unique(model$simplify$pim.translation[indices])
       used.beta=which(apply(model$design.matrix[model.indices,,drop=FALSE],2,function(x)!all(x=="0")))
-      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(abs(model$results$beta.vcv[used.beta,used.beta]))) ||
+      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(model$results$beta.vcv[used.beta,used.beta])) ||
          any(diag(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])<0))
       {
          dropped.models=c(dropped.models,i)
@@ -388,7 +388,7 @@ else
 {
 	model.indices=unique(model$simplify$pim.translation[indices])
 	used.beta=which(apply(model$design.matrix[model.indices,,drop=FALSE],2,function(x)!all(x=="0")))
-	if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(abs(model$results$beta.vcv[used.beta,used.beta]))) ||
+	if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(model$results$beta.vcv[used.beta,used.beta])) ||
 	   any(diag(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])<0))
 	  message("\nModel has one or more beta variances that are not positive\n")
 }
@@ -720,10 +720,27 @@ if(nreals==1){
 		se.mat=se.mat[-dropped.models,]
 }
 	
-if(!mata)
-	mavg.res=model.average.list(x=list(estimate=estimate.mat,weight=weight,vcv=mavg.vcv),revised=revised, mata=mata, normal.lm=normal.lm, residual.dfs=residual.dfs, alpha=alpha,...)
-else
-	mavg.res=model.average.list(x=list(estimate=estimate.mat,weight=weight,se=se.mat),revised=revised, mata=mata, normal.lm=normal.lm, residual.dfs=residual.dfs, alpha=alpha,...)
+mavg.res=model.average.list(x=list(estimate=estimate.mat,weight=weight,vcv=mavg.vcv),revised=revised, mata=FALSE, normal.lm=normal.lm, residual.dfs=residual.dfs, alpha=alpha,...)
+# if mata, compute tail averaged intervals on the link values and then convert back to reals
+if(mata)
+{
+  mavg.res$lcl=vector("numeric",length=ncol(estimate.mat))
+  mavg.res$ucl=vector("numeric",length=ncol(estimate.mat))
+  for(j in 1:ncol(estimate.mat))
+  {
+    link.estimate=NULL
+    link.se=NULL
+    for (i in 1:nrow(estimate.mat))
+    {
+       link.list=compute.links.from.reals(estimate.mat[i,j],model.list[[1]],parm.indices=estimates.average$par.index[j],vcv.real= mavg.vcv[[i]][j,j],use.mlogits=FALSE)
+       link.estimate=c(link.estimate,link.list$estimates)
+       link.se=c(link.se,sqrt(diag(link.list$vcv)))
+    }
+    interval=mata.wald(theta.hats=link.estimate, se.theta.hats=link.se, model.weights=weight, normal.lm=normal.lm, residual.dfs=residual.dfs, alpha=alpha) 	 
+    mavg.res$lcl[j]=inverse.link(interval[1],link.list$links)
+    mavg.res$ucl[j]=inverse.link(interval[2],link.list$links)
+  }
+}
 #
 #  After processing each model, the model averaged se and v-c matrix is
 #  computed.

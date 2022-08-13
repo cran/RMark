@@ -29,8 +29,9 @@
 #' @examples
 #' 
 #' data(dipper)
-#' mymodel=mark(dipper,threads=1)
-#' export.model(mymodel,replace=TRUE)
+#' mymodel=mark(dipper,threads=1,delete=TRUE)
+#' # remove # to use export.model
+#' #export.model(mymodel,replace=TRUE)
 #' 
 export.model <-
 function(model,replace=FALSE)
@@ -50,7 +51,7 @@ function(model,replace=FALSE)
 #
 #
   model=load.model(model)
-  if(class(model)[1]=="marklist")
+  if(inherits(model,"marklist"))
      for(i in 1:(length(model)-1))
         export.model(model[[i]],replace=replace)
   else
