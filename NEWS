@@ -1,3 +1,58 @@
+RMark 3.0.6 (12 January 2026)
+
+BUG FIXES/CHANGES
+
+* patched extract.mark.output which was not handling reading covariate names and values in the MARK output file where the covariate name was longer than 10 characters.  Thanks to Joe Ceradini for bringing this to my attention.
+
+* patched make.mark.model to exclude time intervals unless they were specified for the model. When there were no time intervals including time interval; was causing MARK to fail on some of the mark-resight models and possibly others that I'm unaware of. Thanks to Adrian Schiavani and Jesse Lewis for bringing this problem to my attention. 
+
+* run of mark in NSpeciesOcc was commented out so it would pass test on Linux for CRAN. My guess is that the Linux version of MARK on CRAN is old.
+
+RMark 3.0.5 (24 March 2024)
+
+BUG FIXES/CHANGES
+
+* added check to popan.derived to stop function if there are any losses on capture (freq=-1) because the code does not support it and results will not match that of MARK. Use derived parameter results instead from MARK.
+
+* added examples for MSJollySeber (?MSJollySeber) and Hidden Markov (?HidMarkov) which were promised in v2.2.9 but for some reason were not included.
+
+* fixed pim header construction for pi in make.mark.model for MSJollySeber model. Was not working in all situations.
+
+* removed limit of 10 character covariate names because it was removed from MARK
+
+* modified model.average.list to set NaN estimates in vcv to 0 and issue a warning. Previously this would cause the code to give an error message and stop.
+
+RMark 3.0.4 (3 October 2023)
+
+NEW FEATURES
+
+* added model RDMSOpenMCSeas2 which has same structure as RDMSOpenMCSeas and at the same time corrected parameter Phi to have a single PIM value rather than time dependent.
+
+RMark 3.0.3 (28 August 2023)
+
+BUG FIXES/CHANGES
+
+* Modified Psi parameter in parameters.txt file for RDMultScalOcc model so it only produces a PIM with only one value instead of time dependent.
+
+
+RMark 3.0.2 (28 August 2023)
+
+BUG FIXES/CHANGES
+* output format in MARK output file was changed and my grep statement wasn't very clever in extract.mark.output so it wasn't picking up covariate values which caused problems in computing real parameters without specifying covariate values. It is now much smarter. Thanks to Brian Folt for bringing this to my attention.
+
+* the code in make.design.data to create the primary field in p design data for the RDMultScalOcc model was not correct when the number of secondary occasions was unequal across primary occasions. This has been fixed. In the case reported the code failed in make.design.data but it is possible that function could succeed and the PIM structure may have been incorrect. Not sure what would happen inside MARK. Hopefully no one got bad results with this bug. Thanks to Reed Scott and Brittany Mosher for reporting this problem.
+
+
+RMark 3.0.1 (22 June 2023)
+
+BUG FIXES/CHANGES
+* parameters.txt file was changed so that R and Rprime in Barker model can be shared parameters.  Also, length of Fprime in that model was reduced by 1 to have the correct length.  This didn't affect model runs but precluded importing models into MARK interface. 
+
+* drop=FALSE was added to two places for beta.vcv in model.average.marklist to handle single parameter models. Further changes were needed and thanks to Samuel Vassallo for bringing this to my attention.
+
+* changes were made to predict_real to handle models with more than one link type (e.g. multistrata) and a variety of conditions that were not anticipated.  Thanks to Nathan Bendik for bring the problems to my attention.
+
+
 RMark 3.0.0 (10 August 2022)
 
 NEW FEATURES

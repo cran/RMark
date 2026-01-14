@@ -40,8 +40,9 @@
 #' of the argument is to trim the list of parameters in computing a vcv matrix
 #' of the real parameters which can get too big to be computed with the
 #' available memory
-#' @param revised if TRUE, uses revised variance formula (eq 6.12 from Burnham
-#' and Anderson) for model averaged estimates and eq 6.11 when FALSE
+#' @param revised if TRUE, uses revised variance formula (eq 4 from Burnham
+#' and Anderson(2004)) for model averaged estimates and eq 1 from Burnham
+#' and Anderson(2004) when revised=FALSE. The latter eq is what is used in B&A books.
 #' @param mata if TRUE, create model averaged tail area confidence intervals as described by Turek and Fletcher
 #' @param alpha The desired lower and upper error rate.  Specifying alpha=0.025
 #' corresponds to a 95% MATA-Wald confidence interval, an' 
@@ -67,9 +68,9 @@
 #' @seealso \code{\link{collect.models}}, \code{\link{covariate.predictions}},
 #' \code{\link{model.table}}, \code{\link{compute.links.from.reals}},
 #' \code{\link{model.average.list}}
-#' @references Burnham, K. P. and D. R. Anderson. 2002. Model Selection and
-#' Multimodel Inference: A Practical Information-Theoretic Approach, Second
-#' edition. Springer, New York.
+#' @references Burnham,K.P.,and Anderson,D.R.(2004)
+#' Multimodel inference-understanding AIC and BIC in model selection.
+#' Sociological Methods & Research,33,261-304.
 #' @keywords utility
 #' @examples
 #' \donttest{
@@ -217,7 +218,7 @@ if(drop)
       }
       model.indices=unique(model$simplify$pim.translation[indices])
       used.beta=which(apply(model$design.matrix[model.indices,,drop=FALSE],2,function(x)!all(x=="0")))
-      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta])) || any(is.infinite(model$results$beta.vcv[used.beta,used.beta])) ||
+      if(any(is.nan(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])) || any(is.infinite(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])) ||
          any(diag(model$results$beta.vcv[used.beta,used.beta,drop=FALSE])<0))
 #      if(any(diag(model$results$beta.vcv)<0))
       {

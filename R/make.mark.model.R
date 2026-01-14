@@ -733,6 +733,7 @@ else
 for (i in 1:length(parameters)) {
   for (j in 1:length(model$pims[[i]]))
   {
+         if(model$model=="MSJollySeber" &i==5)model$pims[[i]][[j]]$stratum=NULL
          ncol = dim(model$pims[[i]][[j]]$pim)[2]
          string=pim.header(pim[[i]][[j]]$group,param.names[i],parameters[[i]],
                    ncol,model$pims[[i]][[j]]$stratum,model$pims[[i]][[j]]$tostratum,model$strata.labels,
@@ -1258,8 +1259,8 @@ create.agenest.var=function(data,init.agevar,time.intervals)
   if(model.list$strata)string=paste(string," strata=",data$nstrata,sep="")
   if(!is.null(covariates))
   {
-	 if(any(nchar(covariates)>10))
-	    stop(paste("\nThe following covariates are longer than 10 characters which is the max length for MARK\n",paste(covariates[nchar(covariates)>10]),collapse=","))	 
+#	 if(any(nchar(covariates)>10))
+#	    stop(paste("\nThe following covariates are longer than 10 characters which is the max length for MARK\n",paste(covariates[nchar(covariates)>10]),collapse=","))	 
 #	 covar10=covariates[duplicated((substr(covariates,1,10)))]
 #	 if(length(covar10)>0) stop(paste("\nFollowing covariates are duplicates of another covariate within the first 10 characters\n",paste(covar10,collapse=", ")))
      string=paste(string," icovar = ",length(covariates))
@@ -1275,8 +1276,12 @@ create.agenest.var=function(data,init.agevar,time.intervals)
      string=paste(string," mixtures =",mixtures)
   time.int=data$time.intervals
   if(!is.null(data$reverse) &&(data$reverse | data$model=="MultScalOcc")) time.int[time.int==0]=1
-  string=paste(string," ICMeans NoHist hist=",nrow(zz),
+  if(length(time.int)>0) 
+    string=paste(string," ICMeans NoHist hist=",nrow(zz),
            ";\n time interval ",paste(time.int,collapse=" "),";\n")
+  else
+    string=paste(string," ICMeans NoHist hist=",nrow(zz),
+                 ";\n")
   if(model.list$strata)
     if(is.null(data$events))
       string=paste(string,"strata=",paste(data$strata.labels[1:data$nstrata],collapse=" "),";\n",sep="")
@@ -1422,11 +1427,11 @@ create.agenest.var=function(data,init.agevar,time.intervals)
 				          multi.session=FALSE
 			         }
                nprimary=1
-               if(data$model=="RDMultScalOcc" & names(parameters)[i]=="p")
-                 nprimary=nocc.secondary[l]/data$mixtures
                for (l in 1:num.sessions)
                {
-                  for(m in 1:nprimary)
+                 if(data$model=="RDMultScalOcc" & names(parameters)[i]=="p")
+                   nprimary=nocc.secondary[l]/data$mixtures
+                 for(m in 1:nprimary)
                   {
                     k=k+1
                     pim[[i]][[k]]=list()

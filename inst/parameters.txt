@@ -16,10 +16,10 @@ MSLiveDead	r	0	0	0	Triang	all	logit	~1						TRUE
 Barker	S	0	0	1	Triang	all	logit	~1															
 Barker	p	1	-1	0	Triang	all	logit	~1															
 Barker	r	0	0	0	Triang	all	logit	~1															
-Barker	R	0	0	0	Triang	all	logit	~1															
-Barker	RPrime	0	0	0	Triang	all	logit	~1															
+Barker	R	0	0	0	Triang	all	logit	~1	FALSE	RPrime															
+Barker	RPrime	0	0	0	Triang	all	logit			R															
 Barker	F	0	-1	1	Triang	all	logit	~1	FALSE	FPrime													
-Barker	FPrime	0	-1	0	Triang	all	logit			F													
+Barker	FPrime	0	-2	0	Triang	all	logit			F													
 POPAN	Phi	0	-1	1	Square	all	logit	~1															
 POPAN	p	0	0	0	Square	all	logit	~1															
 POPAN	pent	1	-1	0	Square	all	mlogit	~1															
@@ -438,7 +438,7 @@ RDMSOpenMCSeas	Omega	0	0		Square	all	mlogit	~1					FALSE	TRUE		1
 RDMSOpenMCSeas	p	0	0	0	Square	all	logit	~1					TRUE	TRUE									
 RDMSOpenMCSeas	Delta	0	0	0	Triang	all	logit	~1					TRUE	TRUE									
 RDMSOpenMCSeas	pent	0	-1	0	Square	all	mlogit	~1					TRUE	TRUE									
-RDMSOpenMCSeas	d	1	-1	0	Square	all	logit	~1					TRUE	TRUE									
+RDMSOpenMCSeas	Phi	0	-1	1	Triang	all	logit	~1					TRUE	TRUE									
 RDMSOpenMCSeas	alpha	0	-1	0	Square	all	mlogit	~1					TRUE	TRUE									
 RDMSOpenMCSeas	c	0	-1	1	Triang	all	logit	~1					TRUE	TRUE									
 PMDead	pi	0	1	0	Square	all	logit	~1			TRUE	-1											
@@ -555,7 +555,7 @@ HidMarkov	Delta	1	-1	0	Triang	all	mlogit	~1						TRUE						TRUE
 OccupancyRE	sigmap	0	1		Square	all	log	~1															
 OccupancyRE	p	0	0	0	Square	all	logit	~1															
 OccupancyRE	Psi	0	1		Square	all	logit	~1															
-RDMultScalOcc	Psi	0	0		Square	all	logit	~1					FALSE	
+RDMultScalOcc	Psi	0	1		Square	all	logit	~1					FALSE	
 RDMultScalOcc	Epsilon	0	-1		Square	all	logit	~1	FALSE	Gamma			FALSE										
 RDMultScalOcc	Gamma	0	-1		Square	all	logit			Epsilon			FALSE										
 RDMultScalOcc	Theta	0	0		Square	all	logit	~1					TRUE										
@@ -569,4 +569,14 @@ MSJollySeber	S	0	-1	1	Triang	all	logit	~stratum						TRUE
 MSJollySeber	p	0	0	0	Triang	all	logit	~stratum						TRUE						
 MSJollySeber	Psi	0	-1	0	Triang	all	mlogit	~-1+stratum:tostratum						TRUE	TRUE					
 MSJollySeber	pent	1	-1	0	Square	all	mlogit	~1						TRUE						
-MSJollySeber	pi	0	1		Square	all	mlogit	~stratum						TRUE		1				
+MSJollySeber	pi	0	1		Square	all	mlogit	~1						TRUE		1				
+RDMSOpenMCSeas2	S	0	-1	1	Triang	all	logit	~stratum					FALSE	TRUE									
+RDMSOpenMCSeas2	Psi	0	-1	0	Triang	all	mlogit	~-1+stratum:tostratum					FALSE	TRUE	TRUE								
+RDMSOpenMCSeas2	pi	1	-2		Square	all	mlogit	~1					FALSE	TRUE		1							
+RDMSOpenMCSeas2	Omega	0	0		Square	all	mlogit	~1					FALSE	TRUE		1							
+RDMSOpenMCSeas2	p	0	0	0	Triang	all	logit	~1					TRUE	TRUE									
+RDMSOpenMCSeas2	Delta	0	0	0	Triang	all	logit	~1					TRUE	TRUE									
+RDMSOpenMCSeas2	pent	0	-1	0	Square	all	mlogit	~1					TRUE	TRUE									
+RDMSOpenMCSeas2	Phi	0	-1	1	Triang	all	logit	~1					TRUE	TRUE									
+RDMSOpenMCSeas2	alpha	0	-1	0	Square	all	mlogit	~1					TRUE	TRUE									
+RDMSOpenMCSeas2	c	0	-1	1	Triang	all	logit	~1					TRUE	TRUE									
