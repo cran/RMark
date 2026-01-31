@@ -1,6 +1,6 @@
-54552cad35a9e7718c98ef20ba6daf47 *DESCRIPTION
+c9d5911ac6527204bcd5fe69a76d8784 *DESCRIPTION
 0ec391593dbd294bc9ae3f002b3bcdb7 *NAMESPACE
-668c91aed4b6774cef326628b5575a0e *NEWS
+6de39714540e76a24f7a62b762e7312c *NEWS
 7a9a8e72681226942995665e7d7cdbbb *R/PIMS.R
 c1e70b712837767fb8a07c409ff6ecb2 *R/RMark-package.R
 a21077e3acbe2ecb618734580cae578e *R/TransitionMatrix.R
@@ -67,7 +67,7 @@ aeae6719086f23075bf4d61efef6da28 *R/utility.r
 40922e79da118df4cd6920e5bc47b5e5 *R/valid.parameters.R
 6579e8dc4eb4b1e494316091f956a66c *R/var.components.R
 cfc302f4432ef46ee09506fd3a3fe409 *R/var.components.reml.r
-90b6893df87a3ba4402d7501540d7e6e *R/zzz.R
+7fd5bd18a05868b2af9f21c449acf6ad *R/zzz.R
 1d5f13d84d841089658f4bf80479f49f *data/Blackduck.rda
 7a9e8154a48757de0b4fa73d5f0b79e2 *data/Density.r
 3b49dd368adc89b2897bb76f4819cec5 *data/Density.txt
@@ -100,7 +100,7 @@ a9813ff6695570fedf31962394c41d19 *data/salamander.rda
 f92cfbb2ed918e84b81ae0e2cbe8339a *inst/CITATION
 8feb84691e2661c270c675344747ed58 *inst/DerivedPar.txt
 9be90d93c9258300a7ca473530d1aac4 *inst/MarkModels.pdf
-e8aad2524968b4c97f188bb6c8f27b68 *inst/README.txt
+4e60c13e1e2a6e19ecb144cb6914e21d *inst/README.txt
 12980162987ca245d2e06d43c02d000a *inst/extdata/MSJS.inp
 970cb95eb27191ba0a3f44e3d0c905e0 *inst/extdata/MSJS3state.inp
 11bbe5f869a587a5d5a3d5e41dfc7525 *inst/extdata/RDMultScalOcc.sampledata.csv
